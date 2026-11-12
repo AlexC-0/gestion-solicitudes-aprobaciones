@@ -13,18 +13,21 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 06, envío, cancelación y bandeja de consulta
+## Alcance vigente: fase 07, aprobación y rechazo
 
-El encargo actual autoriza envío de borradores propios, asignación por tipo en
-Backend, cancelación por autor en borrador/pendiente, filtro de estado y bandeja
-de consulta para revisores. Lee SOLICITUDES y AUTENTICACION antes de modificar.
-Fase 05 publicada en 7571f83952103dce1f54a3a94755a661b21fb749, CI 43207099040
-SUCCESS y 88 pruebas según Alex; no atribuyas esa evidencia a los cambios nuevos.
-Conserva datos, credenciales y migraciones. Usa únicamente status/start/stop de
-la instancia existente; no prepare/reset/initdb ni regeneración de credenciales.
-Transiciones/eventos atómicos con bloqueo, fechas posteriores al bloqueo y
-detalle/historial de una misma instantánea. Concurrencia probada con espera real.
-No implementes aprobación, rechazo, administración ni acciones posteriores.
+El nuevo encargo autoriza aprobar/rechazar pendientes por el revisor asignado,
+comentarios/motivos, consulta del resultado, formularios y pruebas concurrentes.
+Lee SOLICITUDES y AUTENTICACION antes de modificar. Fase 06 publicada en
+f1a10a764d72c6622ccc910b247152ad36b2ec66, CI 43210342557 SUCCESS y 115 pruebas,
+según Alex. Esa evidencia no acredita esta entrega; su CI requiere publicación manual.
+Conserva todo el funcionamiento anterior, datos, credenciales y migraciones.
+Usa únicamente status/start/stop de la instancia existente; no prepare/reset/initdb.
+Transiciones/eventos atómicos con comprobación de responsable/rol/estado dentro
+del bloqueo, fechas posteriores al bloqueo y lectura de una instantánea.
+Verifica esperas concurrentes reales y ambos órdenes frente a cancelación.
+Relaciona las evidencias con A01–A13 sin declarar cerrada V1 ni iniciar su cierre.
+No añadas administración, reasignación, servicios ni despliegue; tampoco cambios
+de CV, LinkedIn o portfolio.
 
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
@@ -57,7 +60,7 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   contraseñas, roles o asignaciones existentes. No muestres credenciales.
 - CI: PostgreSQL 18 efímero del runner con roles propios, readiness, migraciones,
   integración y controles existentes; no necesita Docker local ni credenciales locales.
-- No implementes aprobación, rechazo, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
+- No implementes registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
 - No instales herramientas globales ni cambies Node.js o servicios del sistema.
   No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
 - Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
@@ -125,4 +128,4 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   sin NUL/surrogates aislados ni HTML; conserva el contrato SOLICITUDES.
 - Sin reintentos automáticos de escritura. Un fallo de red tras POST puede dejar
   un borrador guardado: ofrece comprobar el listado antes de repetir.
-- No avances a aprobación/rechazo sin un nuevo encargo.
+- No avances al cierre de V1 sin un nuevo encargo.

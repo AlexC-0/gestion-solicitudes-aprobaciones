@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { ReviewActions } from './ReviewActions';
 import { SolicitudActions } from './SolicitudActions';
 import { SessionStatus, useAuth } from './Auth';
 
 interface Solicitud {
-  id:string; titulo:string; tipo_codigo:string; descripcion:string; estado:string;
+  responsable_id?:string|null; id:string; titulo:string; tipo_codigo:string; descripcion:string; estado:string;
   creada_en:string; actualizada_en:string; autor_nombre?:string; responsable_nombre?:string|null; enviada_en?:string|null; finalizada_en?:string|null;
 }
-interface Evento { id:string; accion:string; creada_en:string; actor_id:string; actor_nombre?:string; estado_anterior?:string|null; estado_posterior:string }
+interface Evento { id:string; accion:string; creada_en:string; actor_id:string; actor_nombre?:string; comentario?:string|null; estado_anterior?:string|null; estado_posterior:string }
 interface Detail { solicitud:Solicitud; historial:Evento[] }
 interface Tipo { codigo:string; nombre:string }
 interface List { solicitudes:Solicitud[]; paginacion:{pagina:number;tamano:number;total:number;paginas:number} }
@@ -94,9 +95,13 @@ export function RequestDetail(){
     {user.rol==='solicitante'&&<SolicitudActions key={s.id} id={s.id} estado={s.estado} reload={async()=>{
       const result=await query.refetch();if(result.isError)throw result.error;
     }}/>}
+    {user.rol==='revisor'&&s.responsable_id===user.id&&<ReviewActions key={s.id} id={s.id} estado={s.estado} reload={async()=>{
+      const result=await query.refetch();if(result.isError)throw result.error;
+    }}/>}
     <h3>Historial</h3><ol className="history">{query.data.historial.map(e=><li key={e.id}>
-      <strong>{e.accion==='creacion'?'Creación del borrador':e.accion==='envio'?'Envío de la solicitud':e.accion==='cancelacion'?'Cancelación de la solicitud':e.accion}</strong> · {date(e.creada_en)}
+      <strong>{e.accion==='creacion'?'Creación del borrador':e.accion==='envio'?'Envío de la solicitud':e.accion==='cancelacion'?'Cancelación de la solicitud':e.accion==='aprobacion'?'Aprobación de la solicitud':e.accion==='rechazo'?'Rechazo de la solicitud':e.accion}</strong> · {date(e.creada_en)}
       <p>Actor: {e.actor_id===user.id?'Tú':e.actor_nombre??'Usuario'} · {e.estado_anterior?e.estado_anterior+" → ":"Estado: "}{e.estado_posterior}</p>
+      {e.comentario!==null&&e.comentario!==undefined&&<p className="plain-text">{e.comentario}</p>}
     </li>)}</ol></>;
 }
 export function EditRequest(){

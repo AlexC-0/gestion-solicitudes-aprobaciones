@@ -142,3 +142,19 @@ ni renuevan sesión. No se cambian configuración, secreto, cookies o store.
 Filtro de estado forma parte de las claves privadas; la confirmación y respuesta
 de una acción se eliminan al cambiar generación. Un resultado tardío no actualiza
 la nueva cuenta. No se añaden reintentos ni almacenamiento web.
+
+## Ampliación de fase 07
+
+Aprobar/rechazar reutilizan createPrivateRouter, protectWrite y handleError:
+sesión vigente, identidad/rol del servidor, caducidad absoluta, CSRF/origen,
+no-store y errores seguros. Las pruebas verifican 401/403 en ambas acciones.
+El ámbito exige además responsable_id guardado; ser revisor no basta.
+
+Los formularios de resolución mantienen comentario/motivo solo en memoria.
+El contenedor por usuario/generación los elimina al salir, caducar o cambiar
+cuenta; AbortSignal y comprobación de generación descartan resultados antiguos.
+El foco con la misma sesión conserva texto mientras la solicitud siga pendiente;
+un cambio terminal elimina el formulario. No se modifica AuthClient ni el
+almacenamiento de sesión, secreto, credenciales, cookies o vigencia.
+Un fallo de red no demuestra ausencia de COMMIT: se ofrece recuperar el detalle,
+sin reintento automático de la escritura.

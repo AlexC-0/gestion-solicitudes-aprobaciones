@@ -313,3 +313,31 @@ Ese resultado es histórico; la fase 06 exige publicación manual y CI propias.
   Mismos controles de sesión, cancelación y descarte de respuestas antiguas.
 - Sin cambios de migraciones, dependencias o infraestructura. Sin aprobación,
   rechazo, administración ni despliegue. Resultados reales en STATUS.
+
+## Fase 07 — aprobación y rechazo
+
+Encargo explícito tras fase 06 publicada en f1a10a7 y CI 43210342557 SUCCESS
+(115 pruebas, evidencia aportada por Alex). Se amplió SOLICITUDES antes del código
+y AGENTS conserva las reglas permanentes. La CI anterior no acredita esta entrega.
+
+- POST aprobar/rechazar separados; cuerpo JSON estricto. Comentario opcional de
+  aprobación y motivo obligatorio de rechazo recortados con trim de ECMAScript,
+  medidos por puntos de código, sin normalizar NFC/NFD. Vacío de aprobación: null.
+- Autorización por rol y responsable guardado dentro del SELECT FOR UPDATE.
+  Borradores y canceladas sin envío permanecen ocultos. Fuera de ámbito: 404;
+  asignadas terminales: 409 sin tocar fechas, comentario o historial.
+- Estado, finalización y evento comparten transacción y fecha SQL posterior al
+  bloqueo. Comentario/motivo reside solo en el evento. No cambia contenido,
+  asignación o envío; se conservan ambas migraciones publicadas.
+- Reutilización del helper de bloqueo de fase 06 para demostrar espera real de
+  dos competidores; ninguna infraestructura genérica de workflows/idempotencia.
+- Formularios específicos en ReviewActions: confirmación definitiva, validación,
+  foco y retorno, bloqueo durante escritura, resultado incierto sin reintento
+  automático y recuperación explícita. Historial escapa texto y conserva líneas.
+- Se reutilizan AuthClient y claves de usuario/generación sin modificarlos.
+  Cambio de sesión desmonta formularios y descarta respuestas tardías.
+- Se actualiza únicamente la expectativa antigua de ausencia de botones del
+  revisor pendiente; permisos del autor y de revisores ajenos se conservan.
+
+Sin dependencias nuevas, administración, reasignación ni despliegue. Las evidencias
+locales y A01–A13 se relacionan en STATUS; V1 no se declara cerrada.

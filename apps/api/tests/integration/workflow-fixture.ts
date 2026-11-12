@@ -42,3 +42,29 @@ export async function fixture(fn:(f:{
 }
 
 export type Fixture = Parameters<Parameters<typeof fixture>[0]>[0];
+
+export async function waitBlocked(f:Fixture,pid:number,count:number){
+  const until=Date.now()+6000;
+  while(Date.now()<until){
+    // Incluye quien espera al primer competidor de la cola del bloqueo por fila.
+    const result=await f.pool.query(
+      `WITH RECURSIVE blocked AS (
+         SELECT pid FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))
+         UNION
+         SELECT a.pid FROM pg_stat_activity a JOIN blocked b ON b.pid=ANY(pg_blocking_pids(a.pid))
+       ) SELECT count(DISTINCT pid)::int n FROM blocked`,[pid]);
+    if(result.rows[0].n>=count)return;
+    await new Promise(resolve=>setTimeout(resolve,20));
+  }
+  throw Error('No se observó la espera concurrente esperada');
+}
+export async function race(f:Fixture,id:string,first:()=>request.Test,second:()=>request.Test){
+  const gate=await f.pool.connect();
+  try{
+    await gate.query('BEGIN');await gate.query('SELECT id FROM solicitudes WHERE id=$1 FOR UPDATE',[id]);
+    const pid=(await gate.query('SELECT pg_backend_pid() pid')).rows[0].pid as number;
+    const one=first().then(r=>r);await waitBlocked(f,pid,1);
+    const two=second().then(r=>r);await waitBlocked(f,pid,2);
+    await gate.query('COMMIT');return await Promise.all([one,two]);
+  }finally{await gate.query('ROLLBACK');gate.release();}
+}

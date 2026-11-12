@@ -1,8 +1,8 @@
-# Solicitudes — contrato vigente, fase 06
+# Solicitudes — contrato vigente, fase 07
 
-Contrato base escrito en fase 05 y ampliado antes del código de fase 06.
+Contrato base escrito en fase 05 y ampliado antes del código de fases 06 y 07.
 Alcance vigente: borradores propios, envío con asignación por tipo, cancelación
-por autor y bandeja de consulta del revisor. Sin aprobación ni rechazo.
+por autor y bandeja del revisor con aprobación/rechazo de pendientes asignadas.
 
 ## HTTP
 
@@ -19,6 +19,8 @@ Cuerpos JSON de hasta 16 KiB. Error: { error: { code, message } }.
 | PATCH /api/solicitudes/:id | Uno o más de titulo, tipo_codigo, descripcion | 200 { solicitud } |
 | POST /api/solicitudes/:id/enviar | Sin cuerpo o {} | 200 { solicitud }, asignación y evento atómicos |
 | POST /api/solicitudes/:id/cancelar | Sin cuerpo o {} | 200 { solicitud }, finalización y evento atómicos |
+| POST /api/solicitudes/:id/aprobar | {} o { comentario: string } | 200 { solicitud }, decisión y evento atómicos |
+| POST /api/solicitudes/:id/rechazar | { motivo: string } | 200 { solicitud }, decisión y evento atómicos |
 
 Objetos estrictos: ningún campo adicional, tampoco en query. Descripción omitida
 al crear equivale a ''. PATCH solo modifica campos presentes. UUID inválido: 400.
@@ -28,7 +30,7 @@ total: lista vacía; cero resultados: paginas=0. Una misma consulta SQL obtiene
 lista y total bajo la misma instantánea. Nuevas inserciones entre peticiones
 pueden desplazar páginas; no se promete una instantánea entre peticiones.
 Filtro estado opcional: borrador, pendiente, aprobada, rechazada o cancelada;
-se aplica a filas y total sin ampliar el ámbito. Detalles de fase 06 al final.
+se aplica a filas y total sin ampliar el ámbito. Ampliaciones de fases 06 y 07 al final.
 
 solicitud contiene las columnas públicas del modelo: id, autor_id, tipo_codigo,
 titulo, descripcion, estado, responsable_id, creada_en, actualizada_en,
@@ -57,7 +59,7 @@ Lecturas aplican el ámbito definitivo: solicitante autor; revisor únicamente
 responsable de una solicitud enviada, nunca borradores ni canceladas sin envío.
 La creación siempre produce borrador; el envío lo hace visible al responsable.
 El mismo predicado protege listado/detalle y la bandeja de consulta del revisor.
-Los revisores no tienen acciones de escritura en esta fase.
+Solo el revisor asignado resuelve pendientes mediante aprobar/rechazar; véase fase 07.
 Edición busca por id y autor con rol solicitante: ajeno/inexistente/revisor 404.
 Propia fuera de borrador: 409. No se revela existencia ajena.
 
@@ -102,7 +104,7 @@ recorridos reales en desarrollo/compilado. Resultados efectivos en STATUS.
 
 La fase 05 está publicada en 7571f83952103dce1f54a3a94755a661b21fb749:
 CI 43207099040 SUCCESS y 88 pruebas según Alex. Las reglas base anteriores se
-conservan salvo las ampliaciones expresas de este apartado. Sin aprobación/rechazo.
+conservan salvo las ampliaciones expresas de este apartado. La resolución se amplía en fase 07, más abajo.
 
 ### Acciones y errores
 
@@ -161,10 +163,62 @@ consultar las demás asignadas. Cambiar filtro vuelve a página 1 y paginar lo c
 Claves private + usuario + generación + página/filtro; misma API y detalle.
 
 Detalle propio: Enviar borrador y Cancelar solicitud según estado; cancelar exige
-confirmación explícita que advierte que no se puede reabrir. Revisor solo consulta.
+confirmación explícita que advierte que no se puede reabrir. El revisor consulta y, desde fase 07, resuelve pendientes asignadas.
 Historial con nombres legibles de creación/envío/cancelación, actor, fecha y estados.
 Acción correcta invalida detalle/listas y muestra confirmación específica. 409
 permite actualizar detalle; fallo de red reconoce resultado incierto y permite
-comprobar antes de repetir. Sin reintentos, respuestas tardías ni controles de aprobación/rechazo.
+comprobar antes de repetir. Sin reintentos automáticos; se descartan respuestas tardías. Fase 07 añade resolución.
 Pruebas PostgreSQL demostrarán espera real de bloqueos y rollback; resultados
 efectivos y límites de HTTP/Chrome se registrarán en STATUS.
+
+## Fase 07 — aprobación y rechazo (contrato previo al código)
+
+Fase 06 publicada en f1a10a764d72c6622ccc910b247152ad36b2ec66, CI 43210342557
+SUCCESS y 115 pruebas según Alex. La nueva fase necesita publicación/CI propias.
+
+POST /api/solicitudes/:id/aprobar requiere JSON {} o { comentario: string }.
+Comentario opcional de 0–1000 puntos de código tras trim de ECMAScript; omitido
+o vacío después del recorte se guarda como null.
+POST /api/solicitudes/:id/rechazar requiere JSON { motivo: string }, de 10–1000
+puntos de código tras el mismo recorte. Ausente, vacío o solo espacios: 400.
+El motivo se guarda exclusivamente en comentario del evento rechazo.
+
+No se admite ausencia de cuerpo, null, arrays, tipos incorrectos, propiedades
+adicionales ni query. Se conservan límite 16 KiB, UUID, texto plano, rechazo de
+NUL/surrogates/etiquetas, cómputo por puntos de código y ausencia de NFC/NFD.
+200 { solicitud } solo después de COMMIT. Errores: 400 entrada, 401 sesión,
+403 CSRF/origen, 404 fuera de ámbito, 409 INVALID_STATE incompatible/repetido,
+413 tamaño y 503 técnico genérico sin detalles SQL.
+
+Ámbito de resolución: rol revisor, responsable_id igual a identidad del servidor,
+enviada_en no null y estado distinto de borrador. Se bloquea esa fila antes de
+comprobar que sigue pendiente. Solicitantes, revisores no asignados, borradores,
+canceladas sin envío e inexistentes comparten 404. Asignada ya aprobada/rechazada/
+cancelada: 409 sin modificar comentario, fechas ni eventos.
+
+Transiciones pendiente → aprobada y pendiente → rechazada. Se conservan contenido,
+autor, tipo, responsable y enviada_en. Actualiza estado, finalizada_en y
+actualizada_en con una fecha SQL generada después del bloqueo. Evento aprobacion/
+rechazo con actor servidor, estados pendiente/terminal, comentario normalizado
+y la misma fecha exacta copiada desde SQL. Evento y cambio se confirman juntos;
+fallo del evento revierte todo. No hay reapertura, reasignación o edición terminal.
+
+Las resoluciones compiten con la cancelación por el mismo bloqueo: solo una
+transición terminal confirma. Perdedoras/repeticiones: 409 sin evento adicional;
+el comentario final pertenece únicamente a la ganadora (null si gana cancelación).
+Se probarán ambos órdenes resolución/cancelación y aprobación/rechazo con esperas
+reales derivadas de la conexión de bloqueo propia.
+
+El detalle/historial siguen usando una única instantánea y exponen comentario del
+evento a autor y responsable. La UI muestra etiquetas Aprobación/Rechazo y texto
+plano con saltos de línea. No interpreta HTML ni crea otra API de decisiones.
+
+Detalle del revisor asignado pendiente: botones Aprobar/Rechazar abren formulario
+con comentario opcional/motivo obligatorio, aviso de decisión definitiva y botones
+Confirmar aprobación/Confirmar rechazo y Volver sin resolver. Foco al campo,
+error asociado al campo, Escape/volver devuelve foco. Escrituras deshabilitadas
+mientras se procesan, sin reintentos; 409 requiere actualizar detalle y red incierta
+advierte que pudo guardarse. Éxito invalida detalle/listas y confirma la decisión.
+Comentario/formulario se eliminan al cambiar sesión, salir, caducar o dejar de ser
+aplicable por cambio de estado; foco con la misma sesión pendiente los conserva.
+Generación/AbortSignal descartan respuestas antiguas. No se declara cerrada V1.

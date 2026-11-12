@@ -77,3 +77,5 @@ nav { flex-wrap: wrap; }
 .cancel-confirmation { border: 1px solid #a85c28; border-radius: 5px; padding: 1rem; margin-top: 1rem; background: #fff8ed; }
 .cancel-confirmation h3 { margin-top: 0; }
 .request-actions { margin: 1.5rem 0; }
+.decision-form { border: 1px solid #87958d; border-radius: 5px; padding: 1rem; background: #f8faf7; }
+.decision-form h3, .decision-form > p { margin: 0; }

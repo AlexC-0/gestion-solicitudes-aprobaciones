@@ -70,7 +70,7 @@ export function App() {
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <p className="scope-note">Creación, envío y cancelación disponibles. Los revisores pueden consultar sus solicitudes asignadas.</p>
+          <p className="scope-note">Los solicitantes gestionan sus solicitudes y los revisores asignados pueden aprobarlas o rechazarlas.</p>
         </main>
         <footer>CHAMBA DIARIA · Aprender construyendo</footer>
       </div>

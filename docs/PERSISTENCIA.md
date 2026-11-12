@@ -242,3 +242,25 @@ que ambos competidores esperan (directamente o en su cola) antes de liberarla.
 No cuentan bloqueos ajenos ni llaman «concurrentes» a peticiones secuenciales.
 Los esquemas aleatorios propios _test se eliminan con la protección existente de
 current_database. Los datos app y las credenciales se conservan.
+
+## Fase 07 — resolución terminal
+
+Aprobar y rechazar reutilizan el esquema publicado. Bloquean la fila por id,
+responsable guardado, rol revisor, envío no nulo y estado distinto de borrador;
+comprueban pendiente después del bloqueo. UPDATE conserva contenido, autor,
+tipo, responsable y enviada_en. Una CTE materializada genera clock_timestamp;
+finalizada_en y actualizada_en comparten ese instante y el INSERT del evento
+copia actualizada_en desde SQL, conservando precisión. El motivo de rechazo
+se almacena en comentario del evento, sin duplicación en solicitudes.
+
+COMMIT precede a la respuesta 200. Fallar el evento revierte estado y metadatos.
+Las decisiones y la cancelación compiten por el mismo bloqueo: una terminal,
+un evento y comentario de la ganadora; las restantes reciben 409.
+La lectura de expediente e historial conserva una sola instantánea SQL.
+
+La integración de esta fase comprueba doble aprobación, doble rechazo,
+aprobación/rechazo y ambas resoluciones/cancelación en ambos órdenes relevantes,
+con esperas reales identificadas por pg_blocking_pids desde la conexión propia.
+Son 80 pruebas de integración en total, incluidas las anteriores. Cada ejecución
+verifica current_database antes de crear/eliminar su esquema nuevo en _test.
+No se ejecutaron prepare, reset, initdb, seed ni nuevas migraciones.

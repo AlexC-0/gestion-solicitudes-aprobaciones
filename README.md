@@ -1,6 +1,6 @@
 # Gestión de solicitudes y aprobaciones
 
-Proyecto 02 de CHAMBA DIARIA. Base fullstack para una futura aplicación interna
+Proyecto 02 de CHAMBA DIARIA. Aplicación interna
 con cuentas ficticias y solicitudes de material, software y formación.
 
 ## Estado actual
@@ -13,7 +13,8 @@ Hay esquema PostgreSQL, migraciones, pool/transacciones y seed ficticio con role
 Hay acceso real, sesiones PostgreSQL, CSRF y cierre de sesión. La autorización
 por rol y autor permite crear, listar, consultar y editar borradores propios,
 enviarlos con asignación automática y cancelarlos. Los revisores consultan únicamente
-las solicitudes enviadas que tienen asignadas, también tras su cancelación.
+las solicitudes enviadas que tienen asignadas y pueden aprobarlas o rechazarlas
+mientras estén pendientes. Autor y responsable consultan las decisiones y comentarios.
 GET /api/health solo acredita que el proceso HTTP responde: no comprueba PostgreSQL
 ni la disponibilidad completa del sistema. No hay despliegue.
 
@@ -150,10 +151,14 @@ La fase 04 quedó publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con
 según Alex: instalación, tipos, migraciones, build y 64 pruebas.
 La fase 05 quedó publicada en 7571f83952103dce1f54a3a94755a661b21fb749, con
 [CI 43207099040 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43207099040)
-y 88 pruebas según Alex. La fase 06 queda local; su CI está pendiente de publicación manual.
+y 88 pruebas según Alex. La fase 06 está publicada en f1a10a764d72c6622ccc910b247152ad36b2ec66,
+con [CI 43210342557 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43210342557)
+y 115 pruebas, según Alex. Fase 07 verificada localmente con 144 pruebas; su publicación
+manual y CI propias están pendientes. No se declara cerrada V1.
 
 El proyecto tiene entorno PostgreSQL propio e independiente del Proyecto 01.
-Borradores, envío, cancelación y consulta del revisor están implementados; aprobación y rechazo siguen pendientes. No hay despliegue.
+Borradores, envío, cancelación, aprobación, rechazo e historial están implementados.
+No hay despliegue; evidencias y comprobaciones finales pendientes en STATUS.
 
 ## Primera preparación de una copia nueva — Windows
 
@@ -269,7 +274,7 @@ Abre http://127.0.0.1:5173/acceso con una cuenta ficticia solicitante existente.
 Desde Mi cuenta → Mis solicitudes puedes crear un borrador, abrirlo, recargar y
 editar título, tipo y descripción. Tiene historial de creación; editar no genera
 transiciones. Los otros solicitantes y revisores no ven ni modifican ese borrador.
-El listado pagina de 20 en 20 y permite filtrar por estado. La fase 06 añade envío y cancelación; aprobación y rechazo siguen pendientes.
+El listado pagina de 20 en 20 y permite filtrar por estado. La fase 06 añadió envío/cancelación y la fase 07 añade aprobación/rechazo.
 
 Credenciales locales ya existentes en .local/seed-credentials.json, excluidas de Git.
 No las pegues en documentación ni consola. Los recorridos de verificación conservan
@@ -312,11 +317,38 @@ npx --yes --package=npm@11.19.1 npm run dev
    cancelar una enviada. Si se cancela un borrador, solo lo ve el autor.
 
 Tras un conflicto o una conexión interrumpida, Actualizar detalle permite comprobar
-el estado antes de repetir. No hay reintentos automáticos ni controles de aprobación
-o rechazo. La asignación no se cambia después del envío.
+el estado antes de repetir. No hay reintentos automáticos. La asignación no se cambia después del envío.
 
 Compilado: detén dev, ejecuta npx --yes --package=npm@11.19.1 npm run build y
 npx --yes --package=npm@11.19.1 npm start; abre http://127.0.0.1:3000/acceso.
 Al terminar, Ctrl+C y npx --yes --package=npm@11.19.1 npm run db:local -- stop.
 Datos conservados. Los recorridos de esta fase dejan dos solicitudes ficticias
 «Prueba fase 06 …», enviadas y después canceladas, con tres eventos cada una.
+
+## Aprobación y rechazo — fase 07
+
+Con la instancia ya preparada, usa los comandos status/start/dev anteriores.
+No ejecutes prepare, reset, seed ni regeneres credenciales para probar esta fase.
+
+1. Como Solicitante Uno, crea y envía una solicitud de material o software.
+2. Cierra sesión y accede como Revisor Uno con las credenciales privadas existentes.
+   En Mi cuenta → Bandeja de revisión, abre esa pendiente.
+3. Pulsa Aprobar, escribe un comentario opcional (hasta 1000 puntos de código
+   tras recortar espacios exteriores) y confirma con Confirmar aprobación.
+4. Para comprobar rechazo, crea y envía otra solicitud como autor. Como responsable,
+   pulsa Rechazar, escribe un motivo de 10–1000 puntos de código y confirma.
+   Volver sin resolver o Escape descarta el texto y devuelve el foco al botón.
+5. Consulta las decisiones en los filtros Aprobada/Rechazada. Vuelve al autor
+   para comprobar resultado e historial con comentario/motivo y saltos de línea.
+   Las decisiones son definitivas y no pueden editarse o reabrirse.
+
+Formación corresponde a Revisor Dos. Otro revisor no puede consultar ni resolver
+la solicitud. Ante 409, Actualizar detalle recupera el estado vigente; ante una
+interrupción de red, la decisión podría haberse guardado: comprueba el detalle.
+No se reintenta automáticamente. La cancelación del autor compite con la resolución;
+solo se confirma una transición terminal y su evento.
+
+Para probar el compilado, detén dev, ejecuta build y start con el prefijo npm
+11.19.1 indicado arriba y abre http://127.0.0.1:3000/acceso.
+Al terminar: Ctrl+C y db:local -- stop con el mismo prefijo. Se conservan los datos.
+Sin nuevas dependencias, migraciones, administración o despliegue.

@@ -11,7 +11,7 @@ afterEach(()=>clients.splice(0).forEach(c=>c.clear()));
 const expiresAt=new Date(Date.now()+3600000).toISOString();
 const person=(id='uno',rol='solicitante')=>({user:{id,nombre:id,correo:id+'@example.com',rol},expiresAt});
 const time=new Date().toISOString();
-const initial={id:'expediente',titulo:'Solicitud de prueba',tipo_codigo:'material',descripcion:'Descripción válida para enviar.',
+const initial={responsable_id:null as string|null,id:'expediente',titulo:'Solicitud de prueba',tipo_codigo:'material',descripcion:'Descripción válida para enviar.',
   estado:'borrador',autor_nombre:'Solicitante Uno',responsable_nombre:null as string|null,creada_en:time,actualizada_en:time,enviada_en:null as string|null,finalizada_en:null as string|null};
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>{resolve=r;});return{promise,resolve};}
 function backend(role='solicitante'){
@@ -36,7 +36,7 @@ function backend(role='solicitante'){
     throw Error('Ruta no prevista en prueba');
   });
   vi.stubGlobal('fetch',fetch);
-  return {fetch,override,setIdentity:(id:string)=>{identity=person(id,role);},setState:(estado:string)=>{solicitud={...solicitud,estado};}};
+  return {fetch,override,setIdentity:(id:string)=>{identity=person(id,role);},setState:(estado:string)=>{solicitud={...solicitud,estado,responsable_id:role==="revisor"?"uno":null};}};
 }
 function show(path='/solicitudes/expediente'){
   const c=createQueryClient();clients.push(c);render(<QueryClientProvider client={c}><MemoryRouter initialEntries={[path]}><App/></MemoryRouter></QueryClientProvider>);return c;
@@ -79,7 +79,9 @@ it('la bandeja inicia en pendientes, permite todos los estados y nunca muestra a
   await waitFor(()=>expect(api.fetch.mock.calls.some(c=>c[0]==='/api/solicitudes?pagina=1')).toBe(true));
   await userEvent.click(await screen.findByRole('link',{name:'Solicitud de prueba'}));
   expect(await screen.findByText('Solicitante Uno')).toBeInTheDocument();
-  expect(screen.queryByRole('button',{name:/Enviar|Cancelar|Aprobar|Rechazar/})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:/Enviar|Cancelar/})).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Aprobar'})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Rechazar'})).toBeInTheDocument();
   expect(screen.queryByRole('link',{name:'Editar borrador'})).not.toBeInTheDocument();
 });
 it('cambiar filtro vuelve a primera página y paginar conserva filtro y clave privada',async()=>{

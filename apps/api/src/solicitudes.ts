@@ -16,6 +16,8 @@ const fields = {
 const creation = z.strictObject({ ...fields, descripcion: fields.descripcion.default('') });
 const editing = z.strictObject({ titulo: fields.titulo.optional(), tipo_codigo: fields.tipo_codigo.optional(), descripcion: fields.descripcion.optional() })
   .refine(v => Object.keys(v).length > 0);
+const approval = z.strictObject({ comentario: z.string().transform(v => v.trim()).pipe(text(0, 1000)).optional() });
+const rejection = z.strictObject({ motivo: z.string().transform(v => v.trim()).pipe(text(10, 1000)) });
 const integer = (max: number, fallback: string) => z.string().regex(/^[1-9][0-9]*$/).default(fallback)
   .transform(Number).refine(n => Number.isSafeInteger(n) && n <= max);
 const states = z.enum(['borrador', 'pendiente', 'aprobada', 'rechazada', 'cancelada']);
@@ -138,6 +140,35 @@ export function createSolicitudes(pool: pg.Pool, auth: Awaited<ReturnType<typeof
           `INSERT INTO eventos_solicitud (solicitud_id,actor_id,accion,estado_anterior,estado_posterior,creada_en)
            SELECT id,$2,$3,$4,estado,actualizada_en FROM solicitudes WHERE id=$1`,
           [id, user.id, action === 'enviar' ? 'envio' : 'cancelacion', row.estado]);
+        return updated.rows[0] as unknown;
+      });
+      res.json({ solicitud });
+    });
+  }
+  for (const action of ['aprobar', 'rechazar'] as const) {
+    router.post('/solicitudes/:id/' + action, auth.protectWrite, async (req, res) => {
+      parse(noQuery, req.query, 'La decisión no admite parámetros.');
+      const id = parse(uuid, req.params.id, 'El identificador de solicitud no es válido.');
+      const comentario = action === 'aprobar'
+        ? parse(approval, req.body, 'El comentario opcional admite hasta 1000 caracteres de texto plano, sin campos adicionales.').comentario || null
+        : parse(rejection, req.body, 'Introduce un motivo de 10 a 1000 caracteres de texto plano, sin campos adicionales.').motivo;
+      const user = res.locals.user as PublicUser;
+      const solicitud = await transaction(pool, async client => {
+        const locked = await client.query(
+          "SELECT estado FROM solicitudes WHERE id=$1 AND responsable_id=$2 AND $3='revisor' AND enviada_en IS NOT NULL AND estado<>'borrador' FOR UPDATE",
+          [id, user.id, user.rol]);
+        if (!locked.rowCount) throw missing();
+        if (locked.rows[0]?.estado !== 'pendiente') {
+          throw new AuthError(409, 'INVALID_STATE', 'El estado ha cambiado o no permite resolver esta solicitud. Actualiza el detalle.');
+        }
+        const updated = await client.query(
+          `WITH momento AS MATERIALIZED (SELECT clock_timestamp() AS fecha)
+           UPDATE solicitudes s SET estado=$2,finalizada_en=m.fecha,actualizada_en=m.fecha
+           FROM momento m WHERE s.id=$1 RETURNING s.*`, [id, action === 'aprobar' ? 'aprobada' : 'rechazada']);
+        await client.query(
+          `INSERT INTO eventos_solicitud (solicitud_id,actor_id,accion,estado_anterior,estado_posterior,comentario,creada_en)
+           SELECT id,$2,$3,'pendiente',estado,$4,actualizada_en FROM solicitudes WHERE id=$1`,
+          [id, user.id, action === 'aprobar' ? 'aprobacion' : 'rechazo', comentario]);
         return updated.rows[0] as unknown;
       });
       res.json({ solicitud });

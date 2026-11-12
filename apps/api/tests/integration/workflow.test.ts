@@ -2,7 +2,7 @@ import request from 'supertest';
 import { expect, it } from 'vitest';
 import { AUTH_MS } from '../../src/auth/authentication.js';
 import { seedAccounts } from '../../src/persistence/seed.js';
-import { fixture, origin, type Fixture } from './workflow-fixture.js';
+import { fixture, origin, waitBlocked, race, type Fixture } from './workflow-fixture.js';
 
 const draft={titulo:'Petición de material',tipo_codigo:'material',descripcion:'Descripción suficiente para enviar.'};
 const absent='11111111-1111-4111-8111-111111111111';
@@ -10,31 +10,6 @@ type Session=Awaited<ReturnType<Fixture['login']>>;
 async function create(f:Fixture,a:Session,input:object=draft){return (await f.write(a).send(input).expect(201)).body.solicitud.id as string;}
 const action=(f:Fixture,a:Session,id:string,verb='enviar')=>f.write(a,'solicitudes/'+id+'/'+verb).send({});
 async function detail(f:Fixture,a:Session,id:string){return (await f.get(a,'solicitudes/'+id).expect(200)).body;}
-async function waitBlocked(f:Fixture,pid:number,count:number){
-  const until=Date.now()+6000;
-  while(Date.now()<until){
-    // Incluye quien espera al primer competidor de la cola del bloqueo por fila.
-    const result=await f.pool.query(
-      `WITH RECURSIVE blocked AS (
-         SELECT pid FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))
-         UNION
-         SELECT a.pid FROM pg_stat_activity a JOIN blocked b ON b.pid=ANY(pg_blocking_pids(a.pid))
-       ) SELECT count(DISTINCT pid)::int n FROM blocked`,[pid]);
-    if(result.rows[0].n>=count)return;
-    await new Promise(resolve=>setTimeout(resolve,20));
-  }
-  throw Error('No se observó la espera concurrente esperada');
-}
-async function race(f:Fixture,id:string,first:()=>request.Test,second:()=>request.Test){
-  const gate=await f.pool.connect();
-  try{
-    await gate.query('BEGIN');await gate.query('SELECT id FROM solicitudes WHERE id=$1 FOR UPDATE',[id]);
-    const pid=(await gate.query('SELECT pg_backend_pid() pid')).rows[0].pid as number;
-    const one=first().then(r=>r);await waitBlocked(f,pid,1);
-    const two=second().then(r=>r);await waitBlocked(f,pid,2);
-    await gate.query('COMMIT');return await Promise.all([one,two]);
-  }finally{await gate.query('ROLLBACK');gate.release();}
-}
 function checkHistory(d:Awaited<ReturnType<typeof detail>>,actions:string[]){
   expect(d.historial.map((e:{accion:string})=>e.accion)).toEqual(actions);
   expect(d.historial.at(-1).estado_posterior).toBe(d.solicitud.estado);
