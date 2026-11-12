@@ -1,9 +1,9 @@
-# Decisiones iniciales
+# Decisiones del Proyecto 02
 
-Las reglas funcionales del [PROJECT_BRIEF](PROJECT_BRIEF.md) están definidas por
-el encargo. La selección técnica es el alcance propuesto para implementaciones
-posteriores: documentarla no instala dependencias ni acredita compatibilidad
-entre versiones concretas de paquetes.
+Las reglas funcionales del [PROJECT_BRIEF](PROJECT_BRIEF.md) se conservan.
+La sesión inicial fue documental; su actualización está publicada en `5ef10e5`.
+El nuevo encargo autoriza la base fullstack ejecutable, dependencias locales y CI,
+sin autenticación, solicitudes o persistencia. Los nuevos cambios siguen locales.
 
 ## Definido
 
@@ -19,59 +19,111 @@ entre versiones concretas de paquetes.
 | Backend como autoridad | Evitar manipulación e impedir acceso ajeno | Sesión para identidad/rol; 404 fuera de ámbito |
 | Sin reintentos automáticos de escrituras | Evitar repetir acciones sin confirmación | No se promete idempotencia no definida |
 
-## Diseño técnico propuesto
+## Base fullstack: decisiones implementadas
 
-| Elección | Motivo y límites |
+- npm workspaces con @chamba/api y @chamba/web; raíz y workspaces privados.
+  Un único lockfile raíz. .npmrc exige engines y guarda versiones exactas.
+- Node.js >=24.13.0 <25 y npm >=11 <12. La API usa TypeScript estricto con NodeNext,
+  imports .js y aplicación separada del arranque. Vite usa Bundler y JSX de React;
+  no se fuerza la misma resolución de módulos en ambos workspaces.
+- API_PORT=3000 y WEB_PORT=5173 por defecto; valores configurables por entorno,
+  solo loopback. Vite rechaza puertos ocupados con strictPort.
+- En desarrollo, /api se envía por proxy de Vite a Express. El frontend usa URLs
+  relativas; no hay CORS abierto ni configuración con secretos.
+- En compilado, npm start activa --serve-web y Express sirve apps/web/dist,
+  resuelto respecto al módulo del servidor, no al directorio de trabajo.
+  La API se resuelve antes de estáticos/fallback. /assets y archivos inexistentes
+  son 404 JSON; el fallback solo admite navegación GET/HEAD que acepte HTML,
+  sin extensión ni segmentos ocultos. Sintaxis Express 5: /{*path}.
+- createServer(app) abre el puerto y registra disponibilidad solo si escucha.
+  SIGINT/SIGTERM cierran el servidor y dan hasta cinco segundos a las conexiones;
+  agotado el plazo se cierran las restantes y se indica fallo.
+- concurrently coordina dev con --kill-others y comandos Node directos, evitando
+  procesos npm por lotes anidados en Windows. Vite y tsx son herramientas de raíz.
+  La API se ejecuta con tsx sin watch:
+  la prueba con puerto ocupado mostró que el watcher mantenía vivo el proceso
+  pese al fallo. Se prioriza un fallo claro y cierre conjunto; para editar backend
+  se reinicia dev. Vite mantiene su recarga del frontend.
+- TanStack Query realiza la consulta health con retry=false, sin refetch por foco
+  o reconexión, y botón explícito. Se valida el JSON recibido; ni HTTP no exitoso
+  ni contrato incorrecto se presentan como conexión correcta.
+- Router tiene solo inicio y página no encontrada. Texto castellano, estados
+  accesibles, foco visible y CSS adaptable. Health no significa disponibilidad total.
+- CI mínima en ubuntu-latest/Node.js 24: npm ci, typecheck, test y build.
+  contents: read, credenciales de checkout no persistidas y acciones fijadas por SHA.
+  No hay bases, secretos, despliegues o jobs vacíos.
+
+## Versiones seleccionadas y resueltas
+
+Consulta al registro oficial npm, instalación y npm ls sin conflictos de peers.
+Node.js 24.13.0 y npm 11.6.2 se comprobaron de nuevo en esta fase. El lockfile fija
+también las versiones transitivas; no se usan --force o --legacy-peer-deps.
+
+| Paquete | Versión |
 | --- | --- |
-| TypeScript | Tipado común y modo estricto; no sustituye validación de entradas |
-| React, Vite, React Router, TanStack Query y CSS | Pantallas, navegación y datos remotos; limpiar caché al cambiar sesión y desactivar reintentos en escrituras |
-| Node.js 24 LTS, Express y Zod | Backend HTTP y validación; separar aplicación del arranque |
-| PostgreSQL 18, pg, SQL parametrizado, migraciones versionadas | Persistencia relacional, restricciones y transacciones sin ORM anticipado |
-| express-session y adaptador PostgreSQL | Sesiones persistentes; proveedor concreto pendiente, MemoryStore no definitivo |
-| Argon2id | Almacenamiento de contraseñas mediante hash; paquete y parámetros por concretar |
-| Vitest, Supertest, React Testing Library y Playwright | Reglas, HTTP, componentes y recorridos de navegador |
-| npm workspaces y un lockfile | Coordinar web/api con instalación reproducible en un repositorio |
-| GitHub Actions progresivo | Automatizar controles reales cuando existan; sin workflow esta sesión |
+| React / React DOM | 19.3.1 |
+| React Router | 8.5.1 |
+| TanStack React Query | 5.107.1 |
+| Express | 5.3.0 |
+| Vite / plugin React | 8.3.8 / 6.3.0 |
+| TypeScript | 7.0.2 |
+| Vitest | 4.1.12 |
+| Supertest | 7.3.2 |
+| Testing Library React / DOM | 16.3.3 / 10.4.2 |
+| jest-dom / user-event | 7.0.1 / 14.6.10 |
+| jsdom | 29.1.1 |
+| tsx / concurrently | 4.23.15 / 10.0.7 |
+| @types/node / @types/express | 24.19.2 / 5.0.6 |
+| @types/react / @types/react-dom | 19.3.0 / 19.3.0 |
+| @types/supertest | 7.2.1 |
 
-Arquitectura: recepción HTTP, reglas de negocio y acceso a datos. Evitar
-microservicios y abstracciones sin necesidad demostrada. Proxy Vite para /api en
-desarrollo; Express podrá servir el frontend compilado bajo un mismo origen.
+Compatibilidad demostrada y ajustes:
 
-Estructura futura: apps/web/, apps/api/, apps/api/migrations/, tests/e2e/ y docs/.
-Entidades: usuarios, tipos_solicitud, solicitudes, eventos_solicitud y sesiones.
-La estructura no se genera salvo docs/ y los archivos documentales autorizados.
+- jsdom 30/31 exige Node 24.15 o superior dentro de la línea 24; se seleccionó
+  jsdom 29.1.1, cuyo engine acepta 24.13.0. No se modifica Node.js del sistema.
+- Vitest 5.1.0 y jest-dom 7.0.1 declaraban peers instalables pero chocaron en la
+  extensión de tipos Assertion (TS2428). Se seleccionó Vitest 4.1.12, compatible
+  con Vite 8 y Node 24; typecheck y pruebas pasan sin skipLibCheck ni parches de tipos.
+- No se instalan pg, adaptador de sesiones, Argon2id, Zod ni Playwright: todavía no
+  tienen uso en esta fase. PostgreSQL y demás decisiones funcionales siguen pendientes.
 
-## Pendiente antes de la implementación correspondiente
+Acciones verificadas en sus releases oficiales:
 
-- Fijar versiones compatibles de dependencias, requisitos de instalación y scripts
-  reales. La compatibilidad completa del conjunto aún no se ha comprobado.
-- Elegir adaptador de sesiones, paquete/parámetros de Argon2id, estrategia CSRF
-  incluido login, valor SameSite, límites de intentos y limpieza de sesiones.
-- Concretar contratos HTTP, errores y respuesta ante transición ya resuelta;
-  conservar el 404 fuera del ámbito visible y la prohibición de reintentos automáticos.
-- Definir IDs, esquema, restricciones, representación del evento de creación y
-  mecanismo transaccional frente a concurrencia, sin cambiar el modelo funcional.
-- Precisar conteo de caracteres Unicode, espacios en descripción/comentarios y
-  tratamiento de HTML; no cambiar los límites ni admitir contenido HTML.
-- Elegir sentido del orden y contrato de paginación; preservar fecha/identificador,
+- [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1):
+  `3d3c42e5aac5ba805825da76410c181273ba90b1`.
+- [setup-node v7.1.0](https://github.com/actions/setup-node/releases/tag/v7.1.0):
+  `949feb2413d6458794dcd2491c4babbbce0c15c1`.
+
+Referencias técnicas consultadas: [rutas Express 5](https://expressjs.com/en/guide/migrating-5/),
+[proxy y strictPort de Vite](https://vite.dev/config/server-options) y
+[opciones predeterminadas de Query](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults).
+Las declaraciones de engines y peers se consultaron en el registro oficial npm;
+la instalación estricta y la compilación validan la combinación elegida localmente.
+
+## Pendiente antes de implementar el negocio
+
+- Modelo de datos, IDs, restricciones, migraciones y bases propias separadas de
+  desarrollo/pruebas; concretar representación del evento inicial y concurrencia.
+- Adaptador de sesiones, paquete/parámetros Argon2id, estrategia CSRF incluido login,
+  SameSite, límite de intentos y limpieza de sesiones/caché al cambiar de cuenta.
+- Contratos HTTP de negocio y errores de transiciones, conservando el 404 fuera
+  del ámbito visible y la prohibición de reintentos automáticos de escrituras.
+- Conteo Unicode y tratamiento de espacios/HTML sin cambiar los límites definidos.
+- Sentido de orden y contrato de paginación, conservando fecha/identificador,
   20 por defecto y máximo 100.
-- Definir datos iniciales ficticios y cómo proporcionar credenciales de prueba sin
-  versionarlas; concretar el error ante ausencia de revisor válido para un tipo.
-- Preparar, con autorización posterior, bases propias de desarrollo/pruebas y su
-  operación aislada. La instalación local del Proyecto 01 no configura este proyecto.
-- Desarrollar accesibilidad, pruebas y CI gradualmente con evidencia observable.
+- Datos iniciales ficticios y provisión de credenciales sin versionarlas;
+  respuesta ante ausencia de revisor válido para un tipo.
+- Pruebas de persistencia, permisos y recorridos E2E cuando existan esas funciones.
 
-## Git y autorización posterior al encargo inicial
+Estas decisiones pendientes no autorizan su implementación en esta sesión.
 
-Alex indicó crear una carpeta nueva en C:\Users\kaosk\source\repos con el
-nombre del proyecto y autorizó después crear un repositorio GitHub nuevo y público:
-AlexC-0/gestion-solicitudes-aprobaciones. El intento de creación por Codex falló
-por autenticación. Alex creó después el repositorio local y publicó manualmente
-la documentación inicial desde GitHub Desktop. El commit `c79177f` y la visibilidad
-pública se verificaron en GitHub; las evidencias se registran en [STATUS](STATUS.md).
-La autorización puntual de creación queda satisfecha; no se creará otro remoto.
+## Git y publicaciones
 
-Codex no inicializó Git local, configuró origin, hizo staging, commits ni push.
-Estas operaciones siguen reservadas a Alex desde GitHub Desktop. Esta actualización
-documental queda local para su revisión y publicación manual. No se cambia ningún
-remoto o archivo del Proyecto 01 ni se despliega la aplicación.
+Alex creó y publicó el repositorio público y su documentación inicial en
+`c79177f`; la actualización documental posterior está publicada en
+`5ef10e52dcaf1c5229eb4cc3fb87fc6a186f25e7`. El intento fallido de crear el remoto
+por Codex es histórico y no representa un bloqueo actual.
+
+La base fullstack de esta fase queda local, sin staging, commit o push. Esas
+operaciones siguen reservadas a Alex desde GitHub Desktop. No se crea otro
+repositorio ni se cambia origin. No hay despliegue. Resultados en [STATUS](STATUS.md).

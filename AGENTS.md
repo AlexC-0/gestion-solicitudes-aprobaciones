@@ -1,70 +1,78 @@
 # Instrucciones para Codex — Proyecto 02
 
-## Alcance y preparación
+## Preparación y reglas permanentes
 
-- Trabaja exclusivamente en gestion-solicitudes-aprobaciones. No modifiques
-  otros proyectos ni copies la implementación del Proyecto 01.
-- Antes de modificar, comprueba ruta, archivos e instrucciones aplicables.
-  Si existe Git, inspecciona raíz, git status --short --branch, rama y remotos.
-  Conserva cualquier trabajo previo; no sobrescribas ni reinicialices repositorios.
+- Trabaja exclusivamente en gestion-solicitudes-aprobaciones. No inspecciones ni
+  modifiques el Proyecto 01; no copies su implementación, configuración o scripts.
+- Antes de modificar, comprueba ruta, raíz Git, git status --short --branch, rama
+  y remotos. Conserva los cambios del usuario; no sobrescribas trabajo posterior.
 - Lee README.md, docs/PROJECT_BRIEF.md, docs/DECISIONES.md y docs/STATUS.md.
-- Esta sesión autoriza solo README.md, AGENTS.md, docs/PROJECT_BRIEF.md,
-  docs/DECISIONES.md, docs/STATUS.md y .gitignore. No generes carpetas vacías,
-  package.json, scaffolding, endpoints, pantallas, pruebas ni workflows.
-- No instales dependencias ni herramientas globales, no cambies servicios,
-  no crees bases y no ejecutes migraciones durante esta sesión.
-- Documentar reglas y tecnologías no autoriza su implementación. No amplíes el
-  alcance. Explica incompatibilidades antes de sustituir decisiones relevantes.
-- Redacta principalmente en castellano, conservando términos técnicos habituales.
-- No existe sincronización automática con conversaciones del navegador.
+- Conserva el alcance funcional de PROJECT_BRIEF.md. Documentar reglas o tecnologías
+  futuras no autoriza implementarlas. Explica incompatibilidades antes de sustituir
+  decisiones relevantes.
+- Redacta principalmente en castellano. No existe sincronización automática con
+  conversaciones del navegador.
 
-## Git y publicación
+## Alcance vigente: base fullstack ejecutable
 
-- Alex realiza exclusivamente la inicialización local, el staging, los commits
-  y el push desde GitHub Desktop. Mantén main como rama principal cuando exista.
+El nuevo encargo sustituye las restricciones temporales de la sesión documental.
+Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
+pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
+No es necesario pedir otra autorización para estas tareas ordinarias.
+
+- Dos workspaces privados: apps/web (React/Vite) y apps/api (Express), con raíz
+  privada, Node.js 24, TypeScript estricto y un único package-lock.json raíz.
+- Solo dependencias usadas. Comprueba engines y peers; no uses --force ni
+  --legacy-peer-deps para ocultar incompatibilidades. Usa npm ci para reproducir.
+- API mínima: GET /api/health con 200 y {"status":"ok"}, 404 JSON y errores
+  centralizados seguros. Health no comprueba base de datos ni disponibilidad total.
+- Separa aplicación y arranque; escucha en loopback y permite cierre ordenado.
+- Frontend en castellano, Router, TanStack Query, carga/éxito/error y reintento
+  manual. Accesibilidad por teclado, foco visible y diseño adaptable.
+- Proxy /api en desarrollo y mismo origen al servir compilados con Express.
+  API/archivos inexistentes no deben caer en el fallback HTML.
+- CI inicial: instalación, tipos, pruebas y build; sin bases, secretos o despliegue.
+- No implementes autenticación, sesiones, roles, CSRF, solicitudes o persistencia.
+  No crees bases, migraciones, tablas o datos iniciales. No inicies PostgreSQL.
+- No instales herramientas globales ni cambies Node.js o servicios del sistema.
+  No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
+- Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
+
+## Git y publicación manual
+
+- main es la rama principal. Origin debe corresponder exclusivamente a
+  AlexC-0/gestion-solicitudes-aprobaciones. El repositorio público ya existe.
+- Alex realiza exclusivamente staging, commits y push desde GitHub Desktop.
 - Codex no ejecutará git init, staging, commit, push, reescritura de historial,
-  tags, releases, publicación de contenido ni equivalentes por herramientas o API.
-- El repositorio público AlexC-0/gestion-solicitudes-aprobaciones ya fue creado
-  y publicado manualmente por Alex. La autorización puntual para crear el remoto
-  queda satisfecha; no crees otro repositorio ni cambies su visibilidad.
-- Comprueba que origin corresponde a AlexC-0/gestion-solicitudes-aprobaciones.
-  Codex no configurará ni cambiará remotos locales como parte de esta entrega.
+  cambios de remoto, tags, releases, publicación ni equivalentes por herramientas/API.
+- No crees otro repositorio ni cambies su visibilidad. No despliegues.
 - Una petición genérica de terminar, guardar o publicar no modifica estas reglas.
-- Deja los archivos locales para revisión manual. Nunca despliegues la aplicación
-  como parte de este alcance.
+- Deja todos los cambios locales sin staging para revisión y publicación manual.
 
-## Reglas para futuras sesiones autorizadas
+## Criterios técnicos y trabajo futuro
 
-- Conserva los roles excluyentes, permisos por relación, transiciones, límites
-  y requisitos de seguridad de docs/PROJECT_BRIEF.md.
-- Mantén TypeScript estricto, capas sencillas y aplicación separada del arranque
-  HTTP. En backend NodeNext usa extensión .js para imports internos compilados.
-- Usa SQL parametrizado y migraciones versionadas. Una transición y su evento
-  deben confirmarse atómicamente; evita resoluciones simultáneas incompatibles.
-- Prepara bases propias y separadas para desarrollo y pruebas. La base de pruebas
-  debe terminar en _test; crea y limpia solo esquemas identificados como propios.
-  No reutilices bases, configuración o scripts operativos del Proyecto 01.
-- Comprueba instalaciones y estado antes de proponer cambios. Solicita autorización
-  antes de instalar software o iniciar nuevos servicios; no reinicialices clusters.
-- Un repositorio y un lockfile: conserva el futuro package-lock.json y usa npm ci
-  cuando corresponda instalar las versiones bloqueadas.
-- No guardes secretos en Git, documentación, pruebas, respuestas o logs. No leas
-  credenciales para mostrarlas en consola. Los ejemplos futuros serán sin secretos.
-- Excluye dependencias, variables locales, builds y resultados de pruebas.
+- Backend con NodeNext e imports internos .js compatibles con JavaScript compilado.
+  Frontend con configuración apropiada para Vite. Mantén capas sencillas.
+- Conserva .gitattributes y el lockfile. Excluye dependencias, builds, logs,
+  variables locales y resultados de pruebas. No versiones ni muestres secretos.
+- Cuando se autorice persistencia: SQL parametrizado, migraciones versionadas,
+  transición/evento atómicos y bases propias separadas. La de pruebas terminará
+  en _test; limpia solo esquemas identificados como propios, nunca datos ajenos.
+- Antes de instalar software global o preparar servicios nuevos fuera de este
+  alcance, solicita autorización. No reinicialices clusters existentes.
 
 ## Comprobaciones y entrega
 
-- Para documentación: revisa contenido, diff cuando exista Git, enlaces, ejemplos,
-  coherencia de permisos/estados y ausencia de secretos. No hacen falta pruebas
-  automatizadas en esta sesión documental.
-- Para código futuro: ejecuta los controles de tipos, pruebas y build que estén
-  definidos entonces. No inventes scripts ni afirmes haber ejecutado controles.
-  Comprueba HTTP real cuando cambie el arranque; añade pruebas de comportamiento.
-- Planifica pruebas de reglas, permisos, PostgreSQL real y navegador; registra
-  resultados y limitaciones sin atribuir CI histórica a nuevos commits.
-- Actualiza docs/STATUS.md con evidencia real, bloqueos y siguiente paso.
-- Entrega ruta y Git, versiones comprobadas, archivos creados/modificados,
-  comprobaciones y resultados, decisiones pendientes, Summary y Description en
-  castellano para GitHub Desktop y siguiente paso sin iniciarlo automáticamente.
-- Distingue documentación, herramientas verificadas y funcionalidad implementada.
-  Indica siempre que commit y push quedan pendientes de Alex en GitHub Desktop.
+- Ante código: npm run typecheck, npm test y npm run build. Verifica npm ci sin
+  cambios de lockfile y prueba comportamiento observable, sin casos artificiales.
+- Comprueba HTTP real al cambiar el arranque, el servicio compilado de HTML/assets,
+  los 404 API y la comunicación mediante proxy. Si hay navegador, revisa la interfaz;
+  si no, diferencia HTTP/componentes de la revisión visual pendiente.
+- Revisa git diff --check, diff, enlaces y coherencia. Para cambios solo documentales
+  no presentes pruebas históricas como nuevas ni ejecutes suites sin motivo.
+- Actualiza STATUS con comandos/resultados reales, limitaciones y siguiente paso.
+  Preparar CI no significa que ya se haya ejecutado remotamente.
+- Entrega ruta/rama/estado Git inicial y final, archivos cambiados, versiones usadas,
+  pruebas y su número real, comprobaciones HTTP/navegador e instrucciones de arranque.
+- Propón Summary y Description en castellano fieles al diff. Declara que commit y
+  push quedan pendientes de Alex desde GitHub Desktop y no inicies el siguiente hito.
