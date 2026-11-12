@@ -2,8 +2,8 @@
 
 Las reglas funcionales del [PROJECT_BRIEF](PROJECT_BRIEF.md) se conservan.
 La sesión inicial fue documental; su actualización está publicada en `5ef10e5`.
-La persistencia de fase 03 está publicada en 0850ddc. El encargo vigente corrige
-su instalación y validación sin ampliar funcionalidades; el arreglo sigue local.
+La persistencia quedó cerrada en ff60200 con CI 43199015562 SUCCESS. El encargo
+vigente autoriza autenticación; sus cambios nuevos siguen locales.
 
 ## Definido
 
@@ -19,7 +19,7 @@ su instalación y validación sin ampliar funcionalidades; el arreglo sigue loca
 | Backend como autoridad | Evitar manipulación e impedir acceso ajeno | Sesión para identidad/rol; 404 fuera de ámbito |
 | Sin reintentos automáticos de escrituras | Evitar repetir acciones sin confirmación | No se promete idempotencia no definida |
 
-## Base fullstack: decisiones implementadas
+## Base fullstack: decisiones de fase 02 — histórico
 
 - npm workspaces con @chamba/api y @chamba/web; raíz y workspaces privados.
   Un único lockfile raíz. .npmrc exige engines y guarda versiones exactas.
@@ -53,7 +53,7 @@ su instalación y validación sin ampliar funcionalidades; el arreglo sigue loca
   contents: read, credenciales de checkout no persistidas y acciones fijadas por SHA.
   No hay bases, secretos, despliegues o jobs vacíos.
 
-## Versiones seleccionadas y resueltas
+## Versiones seleccionadas en fase 02 — histórico
 
 Consulta al registro oficial npm, instalación y npm ls sin conflictos de peers.
 Node.js 24.13.0 y npm 11.6.2 se comprobaron de nuevo en esta fase. El lockfile fija
@@ -125,12 +125,13 @@ Alex creó y publicó el repositorio público y su documentación inicial en
 por Codex es histórico y no representa un bloqueo actual.
 
 La base fullstack fue publicada por Alex en b45c3f1, con CI 43191106078 SUCCESS.
-La fase 03 está publicada en 0850ddc; su primera CI falló en npm ci. El arreglo
-queda local, sin staging, commit o push. Esas
+La primera CI de fase 03 (0850ddc) falló en npm ci. La reparación ff60200 ya está
+publicada con CI 43199015562 SUCCESS. La autenticación nueva queda local, sin
+staging, commit o push. Esas
 operaciones siguen reservadas a Alex desde GitHub Desktop. No se crea otro
 repositorio ni se cambia origin. No hay despliegue. Resultados en [STATUS](STATUS.md).
 
-## Fase 03 — persistencia autorizada
+## Fase 03 — persistencia autorizada — histórico
 
 Se conserva PROJECT_BRIEF.md. El modelo concretado antes de las migraciones está
 estrechamente limitado a usuarios, tipos, solicitudes y eventos; las sesiones
@@ -163,7 +164,7 @@ Estas decisiones sustituyen los pendientes de modelo, biblioteca Argon2id, provi
 de seed y pruebas de persistencia de fase 02. Siguen pendientes autenticación,
 adaptador de sesiones, CSRF, permisos, negocio, concurrencia de resoluciones y E2E.
 
-## Reparación de instalación posterior a 0850ddc
+## Reparación de instalación posterior a 0850ddc — publicada en ff60200
 
 La copia publicada omitía @emnapi/core y @emnapi/runtime 2.0.0-beta.2. La rama
 opcional de Vite → rolldown → @rolldown/binding-wasm32-wasi exige ambos; también son
@@ -202,3 +203,61 @@ La validación nueva es Windows con Node 24.13.0/npm 11.19.1. WSL no pudo inicia
 por servicio deshabilitado y Docker no tenía daemon disponible; no se instaló ni
 habilitó infraestructura. Linux/Node 24.22.2 y el bootstrap de CI requieren el nuevo
 run remoto tras publicar; la fase 03 no se declara cerrada antes de su SUCCESS.
+
+## Fase 04 — autenticación
+
+El contrato se escribió en [AUTENTICACION](AUTENTICACION.md) antes del código.
+La sesión PostgreSQL identifica al usuario y consulta su rol actual; no implementa
+la futura autorización por relación con solicitudes. No se añaden endpoints de negocio.
+
+| Dependencia nueva | Versión | Uso |
+| --- | --- | --- |
+| express-session | 1.19.0 | Cookie firmada y ciclo de vida de sesión |
+| connect-pg-simple | 10.0.0 | Store PostgreSQL explícito, sin crear tabla automáticamente |
+| csrf-sync | 4.2.1 | Synchronizer token almacenado en sesión |
+| zod | 4.6.7 | Entrada de login estricta |
+| rate-limiter-flexible | 11.4.1 | Contadores de login/fallos con expiración |
+| @types/express-session | 1.19.0 | Tipos estrictos |
+| @types/connect-pg-simple | 7.0.3 | Tipos del adaptador |
+
+Versiones/engines consultados en npm e instalación con npm 11.19.1. Node local
+24.13.0; CI conserva Node 24.22.2. Sin actualizaciones masivas ni flags de omisión.
+Los tres avisos moderados anteriores no se declaran resueltos. Se conserva el aviso
+allowScripts de Argon2/esbuild; las comprobaciones nativas y build funcionan.
+
+- Nueva migración sesiones; primera migración intacta. Store y pool explícitos,
+  resave/saveUninitialized/rolling falsos, disableTouch verdadero. Cierre de timers
+  del store/limitadores antes de pool. Sin fallback a memoria.
+- Expiración absoluta: expiresAt en servidor, cookie y expire del store. Se ajusta
+  touch de cada sesión para que express-session no restablezca maxAge deslizante;
+  GET csrf con token existente no vuelve a guardar ni prolonga la sesión.
+- Login regenera SID y token y espera save. Logout espera destroy. Un error impide
+  autoguardados posteriores y devuelve 503 genérico; no aparenta credenciales erróneas.
+- Cookie Lax/HttpOnly/Path=/ sin Domain. Secure con origen HTTPS; HTTP solo en
+  loopback de desarrollo autorizado, sin trust proxy. Validación de origen exacto
+  configurado, fallback Referer únicamente si Origin falta.
+- csrf-sync recibe X-CSRF-Token y usa estado de sesión; Zod rechaza campos extras.
+  Hash ficticio aleatorio Argon2id por proceso para correo desconocido con el mismo
+  coste de la semilla. No se afirma igualdad perfecta de tiempos de extremo a extremo.
+- Límite IP anterior a cargar sesiones; límite IP/correo independiente de SID.
+  Capacidad acotada sin expulsar claves activas. Solo contadores en memoria: reiniciar
+  API reinicia límites, no sesiones. Escalado multiproceso requeriría otra decisión.
+- Cliente con estados explícitos, AbortController y número de generación para
+  descartar respuestas tardías. Las futuras consultas privadas deben usar claves
+  que empiecen por private para cancelar/eliminar su caché al cambiar sesión.
+  BroadcastChannel solo envía changed; revalidación al foco/visibilidad y expiración.
+- La página técnica queda fuera del proveedor de autenticación; conserva sus cinco
+  pruebas y health no pasa por middleware de sesiones. Vite no recibe .env Backend.
+
+Referencias oficiales consultadas: [express-session](https://github.com/expressjs/session),
+[connect-pg-simple](https://github.com/voxpelli/node-connect-pg-simple),
+[csrf-sync](https://github.com/Psifi-Solutions/csrf-sync) y
+[rate-limiter-flexible](https://github.com/animir/node-rate-limiter-flexible).
+Se contrastó también el código/tipos de las versiones instaladas para cookie,
+expiración, limpieza y cierre de timers. La revisión de seguridad siguió la skill
+security-review, aplicando los requisitos específicos del encargo (SameSite=Lax y
+synchronizer token). No es una auditoría externa ni autorización para desplegar.
+
+Pendiente: autorización de borradores propios y flujos de solicitudes, concurrencia
+de resoluciones, TLS/proxy de un despliegue y CI remota de esta nueva fase.
+No se implementan registro, recuperación, OAuth, MFA o administración.

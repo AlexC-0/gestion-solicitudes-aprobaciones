@@ -2,23 +2,21 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — fase 03 publicada, reparación local y cierre pendiente
+## Estado actual — fase 04, autenticación local verificada
 
-La persistencia está publicada en 0850ddc23f7153ed46e3bd32827d33593584d473.
-Su primera [CI 43197088648](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43197088648),
-job 131110701947, falló durante npm ci con dos entradas @emnapi ausentes.
-El contenedor PostgreSQL se inicializó, pero bootstrap SQL, tipos, pruebas,
-migraciones, integración y build quedaron omitidos. Las 31 pruebas registradas
-para esa entrega eran resultados locales, no de ese run remoto.
+La persistencia quedó cerrada en ff60200f8dbbafbcb10acea2f2293c4fd8584899 con
+[CI 43199015562 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43199015562),
+según comprobación aportada por Alex: instalación, bootstrap PostgreSQL, tipos,
+migraciones repetidas, 15 pruebas existentes, 16 de integración y build.
+Ese resultado corresponde exclusivamente a ese commit y no a la autenticación nueva.
 
-El lockfile se ha reparado mediante npm 11.19.1 y validado localmente de nuevo.
-La corrección está sin staging/commit/push; falta publicar y comprobar una CI
-satisfactoria de su propio commit. La fase 03 todavía no está cerrada.
-No se inicia autenticación ni se amplía funcionalidad.
+Fase 04 implementada y comprobada localmente: acceso React/Express, sesiones
+PostgreSQL, CSRF, origen, límites, caducidad absoluta y logout. 64 pruebas correctas,
+HTTP real y recorrido Chrome en desarrollo y compilado. Falta revisión/publicación
+manual de Alex y CI de su propio commit. No se implementa gestión de solicitudes.
 
-La CI satisfactoria 43191106078 pertenece a b45c3f1 (fase 02), no a fase 03 ni a
-esta reparación. Los apartados históricos siguientes conservan las evidencias
-de sus respectivas entregas; la corrección actual se documenta al final.
+Los apartados siguientes de preparación, reparación y cierre se conservan como
+históricos; los resultados nuevos de autenticación están al final.
 
 ## Preparación documental inicial — histórico
 
@@ -506,3 +504,163 @@ Estado final: main/HEAD 0850ddc y origin conservados; ocho archivos modificados,
 sin staging. Sin procesos temporales de validación; PostgreSQL 18.6 en 55433 detenido.
 Alex debe revisar y realizar commit/push desde GitHub Desktop; comprobar después
 la CI de ese commit antes de cerrar fase 03 o autorizar el siguiente hito.
+
+## Fase 04 — autenticación, 12/11/2026
+
+### Inspección y contrato
+
+Ruta/raíz Git: C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones.
+Inicio main limpio, HEAD/origin/main ff60200f8dbbafbcb10acea2f2293c4fd8584899 y origin
+https://github.com/AlexC-0/gestion-solicitudes-aprobaciones.git. Sin avances posteriores
+en referencias locales. Documentación vigente y skill security-review leídas.
+No se inspeccionó/modificó Proyecto 01. El nuevo encargo autorizó autenticación y
+sustituyó las restricciones temporales anteriores; commits/push siguen siendo manuales.
+
+AUTENTICACION.md se escribió antes de implementar. Se incorporaron csrf/login/me/logout,
+no-store, validación Zod estricta, regeneración, persistencia confirmada antes de éxito,
+CSRF synchronizer token, origen configurado con Referer como fallback y errores seguros.
+Sesión previa 15 minutos; autenticada ocho horas absolutas, sin renovación por actividad.
+Cookie HttpOnly/Lax/Path=/ sin Domain, Secure para HTTPS y excepción HTTP loopback
+explícita. Secreto local aleatorio estable añadido sin sobrescribir variables previas.
+
+Nueva migración 202611120002_sessions.sql según formato connect-pg-simple. La inicial
+202611120001_initial.sql y PROJECT_BRIEF.md permanecen intactos. No hay auto-migración,
+MemoryStore de respaldo ni negocio de solicitudes. Store, límites y pool se cierran.
+Health y frontend siguen fuera del middleware de sesiones.
+
+Cliente: /acceso y /cuenta, recuperación al recargar, logout y estados diferenciados;
+solo memoria, cancelación/eliminación de consultas privadas, descarte de respuestas
+anteriores, revalidación al foco/visibilidad, BroadcastChannel sin secretos y caducidad.
+La página técnica / sigue disponible. Un error técnico no se presenta como credenciales
+incorrectas o cierre confirmado. No hay reintentos automáticos de escrituras.
+
+### Herramientas y dependencias
+
+Node local 24.13.0, npm efectivo 11.19.1 mediante npx; CI conserva Node 24.22.2 y
+npm fijado. PostgreSQL propio 18.6 en 127.0.0.1:55433. No se ejecutó prepare/reset/initdb.
+Chrome instalado utilizado con perfiles temporales exclusivos.
+
+Añadidas versiones exactas: express-session 1.19.0, connect-pg-simple 10.0.0,
+csrf-sync 4.2.1, zod 4.6.7, rate-limiter-flexible 11.4.1 y tipos
+@types/express-session 1.19.0 / @types/connect-pg-simple 7.0.3. Motivos y fuentes en
+DECISIONES. npm ls --depth=0 correcto; un único lockfile versionable.
+
+### Comprobaciones nuevas sobre instalación final
+
+| Control | Resultado |
+| --- | --- |
+| npx --yes --package=npm@11.19.1 npm ci --no-fund | Correcto: 294 paquetes añadidos, 297 auditados; lockfile conservado |
+| npm run typecheck con npm fijado | Correcto, API/frontend estrictos |
+| npm test con npm fijado | 29 correctas: 14 API y 15 frontend, siete archivos |
+| npm run build con npm fijado | API/frontend correctos |
+| db:migrate y db:migrate:test | Una migración nueva aplicada a cada base; repetición final 0 en ambas |
+| npm run test:integration con npm fijado | 35 correctas en dos archivos: 16 persistencia + 19 auth |
+| HTTP compilado real | csrf/login/me/logout y SID previo rechazado; identidad pública sin secretos |
+| Reinicio de proceso API compilada | Recuperación de la misma sesión desde PostgreSQL y mismo secreto |
+| PostgreSQL detenido con servidor HTTP activo | Health 200 exacto, frontend 200 y auth 503 seguro |
+
+SHA-256 del lockfile antes/después de npm ci:
+`1BCF3F851B4C0878475D0AD4C0EE7D4F02C3FA054B9313F333E67FC3E2BE6C8E`.
+
+64 pruebas distintas en total; no se cuentan repeticiones como pruebas nuevas.
+Se conservan las 31 anteriores. La prueba de arranque recibe configuración ficticia
+explícita y una base inaccesible para seguir acreditando fallo ante puerto ocupado.
+Las pruebas de persistencia solo cambian el número de migraciones esperado y la
+numeración de la migración fallida: siguen probando rollback real de DDL y registro.
+
+Las 19 nuevas de integración prueban Argon2 real, correo/contraseña incorrectos
+con respuesta equivalente, campos extras, límites de entrada, contraseña sin trim,
+CSRF ausente/erróneo/otra sesión/previo al login, Origin/Referer, regeneración/409,
+cookie manipulada, expiración absoluta y preautenticación, logout, otra aplicación
+con el mismo store/secreto, usuario eliminado/rol actual, fallos del store/guardado/
+invalidación/consulta, límites IP y fallos con Retry-After y recuperación, y Secure.
+Todas usan PostgreSQL real, credenciales ficticias generadas y esquemas nuevos propios.
+Los fallos selectivos de callbacks se inyectan sobre el store real; no se sustituye
+por MemoryStore. El reloj inyectado evita esperar horas.
+
+Las cuatro nuevas pruebas API sin base cubren configuración y límites acotados.
+Las diez nuevas de frontend cubren formulario/teclado/login/logout, recuperación,
+redirección, error técnico, error de credenciales sin reintento, logout no confirmado,
+caducidad/caché, respuestas tardías, cambio de usuario y eventos de foco/pestañas.
+
+### Navegador y HTTP
+
+El conector Playwright devolvió Extension connection timeout. Se usó Chrome ya
+instalado con CDP, sin instalar extensión/navegador ni cambiar perfiles del usuario.
+Comprobador puntual privado .local/auth-browser-check.mjs; credenciales leídas en
+memoria desde el archivo privado, nunca impresas. Capturas no contienen contraseñas,
+cookies o tokens.
+
+Se completó el recorrido en http://127.0.0.1:5173 (Vite proxy) y
+http://127.0.0.1:3000 (Express compilado, mismo origen): acceso por teclado, foco
+visible, identidad real, recarga, logout, dos pestañas sincronizadas, cambio a revisor,
+fallo de red del logout sin confirmar éxito y recuperación manual. Cookie HttpOnly
+no visible mediante document.cookie; localStorage/sessionStorage vacíos. Cero
+excepciones JavaScript de aplicación observadas. La página técnica sigue funcionando.
+
+Capturas .local/auth-desktop.png, auth-account-desktop.png, auth-mobile.png y
+auth-account-mobile.png; revisión visual 1280x900 y 390x844, sin desbordamiento.
+Se inspeccionaron formulario y cuenta. No es una auditoría completa de accesibilidad
+ni una suite E2E multi-navegador integrada en CI.
+
+.local/auth-http-check.mjs verificó HTTP real compilado en 3100, con detención y
+nuevo proceso API: la cookie autenticada seguía recuperando identidad antes del
+logout. El SID previo no autenticaba y la cookie autenticada dejó de servir al salir.
+Se cerraron los procesos propios. El cierre normal con Ctrl+C también confirmó
+HTTP, sesiones y pool cerrados en desarrollo y compilado.
+
+### Datos, revisión y límites
+
+Comprobación SQL final: desarrollo conserva 4 usuarios, 3 tipos, 0 solicitudes y
+0 eventos; app de pruebas no contiene filas de negocio. Cero esquemas p02_test_
+residuales en ambas bases. Solo se añade la tabla sesiones y sesiones temporales
+reales de los recorridos; su expiración/limpieza pertenece al store. No se borran
+sesiones desconocidas ni se regeneran credenciales. Se conserva .local y .env privados.
+
+La revisión aplicó security-review a secretos, validación, SQL parametrizado,
+sesiones, CSRF/origen, errores, contadores, XSS por escape React y caché. No se afirma
+seguridad absoluta. Los tres avisos moderados de node-pg-migrate/glob/minimatch
+continúan; también el aviso allowScripts de argon2/esbuild sin fallo de ejecución.
+No se aplican --force, --legacy-peer-deps ni se omiten scripts/pruebas para ocultarlos.
+
+TLS real/proxy de despliegue no probado: Secure se comprueba emulando transporte
+HTTPS en Express, y navegación real usa HTTP loopback autorizado. Los límites en
+memoria son de un proceso y se reinician con API; las sesiones persisten. La
+protección de consultas privadas futuras exige queryKey con prefijo private.
+No se implementa autorización de solicitudes, flujos, registro, recuperación,
+OAuth, MFA, administración ni despliegue. No se inicia el siguiente hito.
+
+CI incorpora orígenes de prueba y un secreto aleatorio exclusivo por runner. Mantiene
+npm ci, tipos, pruebas, migraciones repetidas, integración y build; recoge las nuevas
+pruebas automáticamente. El secreto no se imprime ni se toma de desarrollo.
+Su ejecución remota está pendiente de publicación manual; SUCCESS 43199015562
+acredita únicamente ff60200, anterior a estos cambios.
+
+### Archivos de fase 04 y estado final
+
+Modificados (16): .env.example, .github/workflows/ci.yml, AGENTS.md, README.md,
+package.json, package-lock.json, apps/api/package.json, apps/api/src/app.ts,
+apps/api/src/server.ts, apps/api/tests/server.test.ts,
+apps/api/tests/integration/persistence.test.ts, apps/web/src/App.tsx,
+apps/web/src/styles.css, docs/DECISIONES.md, docs/PERSISTENCIA.md y docs/STATUS.md.
+
+Nuevos (12): apps/api/migrations/202611120002_sessions.sql;
+apps/api/src/auth/authentication.ts, config.ts y limits.ts;
+apps/api/tests/auth-config.test.ts, auth-limits.test.ts e integration/auth.test.ts;
+apps/web/src/Auth.tsx y auth-client.ts; apps/web/tests/Auth.test.tsx;
+docs/AUTENTICACION.md y scripts/auth-config.mjs.
+
+main y HEAD ff60200 conservados, origin sin cambios. Entrega local sin staging,
+commit ni push. PostgreSQL detenido y datos conservados; HTTP/Vite/Chrome propios
+cerrados. Alex revisará y publicará desde GitHub Desktop y comprobará su CI.
+Siguiente hito recomendado: borradores propios con permisos, sin comenzarlo.
+
+Revisión final posterior al cierre: git diff --check correcto; 58 archivos
+versionables revisados, 22 enlaces locales existentes, JSON y bloques Markdown
+válidos. Comparación contra contraseñas privadas y SESSION_SECRET: cero coincidencias
+en archivos versionables y en el frontend compilado. auth:configure repetido conserva
+.env byte a byte. Índice vacío; migración inicial, PROJECT_BRIEF, .gitignore y
+.gitattributes idénticos a HEAD. Puertos 3000, 3100, 5173 y 55433 libres; sin procesos
+Node/Chrome/PostgreSQL propios de las verificaciones. Al detener PostgreSQL antes de
+HTTP se observó el aviso genérico previsto de limpieza de sesiones, sin datos sensibles;
+health/frontend siguieron disponibles y el cierre posterior de HTTP/store/pool terminó.

@@ -13,13 +13,16 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: reparación de instalación de fase 03
+## Alcance vigente: fase 04, autenticación
 
-El encargo actual corrige el EUSAGE de npm ci de 0850ddc. Limita cambios a lockfile,
-herramientas, workflow y documentación. Conserva migraciones publicadas, datos y
-credenciales. Para verificar usa start sobre la instancia existente, nunca prepare,
-reset o reinicialización. No comiences autenticación. El alcance de persistencia
-que sigue describe lo ya autorizado/implementado, sin ampliarlo en esta corrección.
+El encargo actual sustituye la prohibición temporal de autenticación. Autoriza
+express-session/connect-pg-simple, nueva migración de sesiones, CSRF, Zod, límites
+de acceso, interfaz React y pruebas/documentación. Lee docs/AUTENTICACION.md antes
+de modificar estos controles. La persistencia está cerrada en ff60200 y CI
+43199015562 SUCCESS; no atribuyas esa evidencia a la autenticación nueva.
+Conserva migraciones publicadas, datos y credenciales. Usa status/start/stop sobre
+la instancia existente; no prepare, reset ni reinicialización en esta fase.
+
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
 No es necesario pedir otra autorización para estas tareas ordinarias.
@@ -51,8 +54,7 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   contraseñas, roles o asignaciones existentes. No muestres credenciales.
 - CI: PostgreSQL 18 efímero del runner con roles propios, readiness, migraciones,
   integración y controles existentes; no necesita Docker local ni credenciales locales.
-- No implementes autenticación, sesiones, autorización, CSRF, endpoints o pantallas
-  de solicitudes. No añadas ORM ni servicios externos. No avances a autenticación.
+- No implementes gestión de solicitudes, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
 - No instales herramientas globales ni cambies Node.js o servicios del sistema.
   No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
 - Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
@@ -97,3 +99,18 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   pruebas y su número real, comprobaciones HTTP/navegador e instrucciones de arranque.
 - Propón Summary y Description en castellano fieles al diff. Declara que commit y
   push quedan pendientes de Alex desde GitHub Desktop y no inicies el siguiente hito.
+
+## Garantías de autenticación
+
+- Sesiones solo en PostgreSQL; sin MemoryStore de respaldo. Login espera save,
+  logout espera destroy. Vigencia absoluta 15 minutos previa / ocho horas autenticada.
+- No desactives CSRF/origen ni límites para facilitar pruebas. Identidad y rol salen
+  del servidor. Health y archivos estáticos no pasan por sesiones.
+- Secretos/cookies/tokens/cuerpos de login nunca se imprimen ni versionan. Solo Backend
+  carga .env. SESSION_SECRET estable, generado localmente sin sobrescribir variables.
+- Las pruebas de auth usan PostgreSQL _test y un esquema nuevo propio; cierra store,
+  temporizadores y pool antes de limpiar. No uses credenciales de desarrollo en CI.
+- Frontend: cancela consultas privadas, elimina caché y descarta respuestas tardías
+  al cambiar sesión; sin localStorage/sessionStorage para autenticación ni reintentos
+  automáticos de login/logout. Un error de red no acredita logout remoto.
+- No avances al siguiente hito de borradores propios sin un nuevo encargo.

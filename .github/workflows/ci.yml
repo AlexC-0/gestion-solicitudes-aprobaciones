@@ -28,6 +28,9 @@ jobs:
           --health-retries 12
     env:
       NPM_VERSION: 11.19.1
+      AUTH_ORIGIN_DEV: http://127.0.0.1:5173
+      AUTH_ORIGIN_COMPILED: http://127.0.0.1:3000
+      SESSION_ALLOW_HTTP: 'true'
       CI_ADMIN_URL: postgresql://p02_ci_admin:disposable-runner-admin@127.0.0.1:5432/postgres
       CI_DATABASE_PASSWORD: disposable-runner-application
       DATABASE_URL: postgresql://p02_ci_dev:disposable-runner-application@127.0.0.1:5432/gestion_solicitudes_aprobaciones
@@ -55,6 +58,8 @@ jobs:
             sleep 1
           done
           exit 1
+      - name: Generar secreto exclusivo del runner
+        run: node --input-type=module -e "import {randomBytes} from 'node:crypto'; import {appendFileSync} from 'node:fs'; appendFileSync(process.env.GITHUB_ENV, 'SESSION_SECRET=' + randomBytes(32).toString('hex') + '\n')"
       - run: node scripts/ci-database.mjs
       - run: npx --yes --package="npm@$NPM_VERSION" npm run typecheck
       - run: npx --yes --package="npm@$NPM_VERSION" npm test

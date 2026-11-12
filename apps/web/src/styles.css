@@ -42,3 +42,11 @@ footer { border-top: 1px solid #d8ddd7; padding: 1.3rem 0 2rem; color: #59666d; 
   .wide-break { display: none; }
   .connection { margin-top: 2rem; }
 }
+nav { display: flex; gap: 1.25rem; }
+.auth-panel form { display: grid; gap: 0.65rem; margin-top: 1.2rem; max-width: 30rem; }
+.auth-panel input { font: inherit; padding: 0.65rem 0.75rem; border: 1px solid #87958d; border-radius: 5px; min-width: 0; width: 100%; background: #fff; color: #202d39; }
+.auth-panel label { font-weight: 600; margin-top: 0.35rem; }
+.auth-panel button { justify-self: start; margin-top: 0.8rem; }
+.auth-panel dd { margin: 0 0 1rem; overflow-wrap: anywhere; }
+.auth-panel dt { font-weight: 600; }
+.account-name { font-size: 1.4rem; font-weight: 650; }

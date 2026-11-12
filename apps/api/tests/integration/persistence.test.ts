@@ -19,9 +19,9 @@ async function draft(pool: pg.Pool) {
 
 it('aplica y registra migraciones una sola vez', async () => {
   await withTestSchema(async (pool, schema) => {
-    expect(await migrate(pool,schema)).toHaveLength(1);
+    expect(await migrate(pool,schema)).toHaveLength(2);
     expect(await migrate(pool,schema)).toHaveLength(0);
-    expect((await pool.query('SELECT count(*)::int AS n FROM pgmigrations')).rows[0].n).toBe(1);
+    expect((await pool.query('SELECT count(*)::int AS n FROM pgmigrations')).rows[0].n).toBe(2);
   });
 });
 
@@ -29,12 +29,13 @@ it('revierte el DDL y registro de una migración fallida', async () => {
   const dir = await mkdtemp(join(tmpdir(),'p02-migrations-'));
   try {
     await copyFile(join(migrationsDirectory,'202611120001_initial.sql'),join(dir,'202611120001_initial.sql'));
-    await writeFile(join(dir,'202611120002_failure.sql'),'-- Up Migration\nCREATE TABLE fallo_temporal(id integer);\nSELECT 1/0;\n');
+    await copyFile(join(migrationsDirectory,'202611120002_sessions.sql'),join(dir,'202611120002_sessions.sql'));
+    await writeFile(join(dir,'202611120003_failure.sql'),'-- Up Migration\nCREATE TABLE fallo_temporal(id integer);\nSELECT 1/0;\n');
     await withTestSchema(async (pool,schema) => {
       await migrate(pool,schema);
       await expect(migrate(pool,schema,dir)).rejects.toMatchObject({code: '22012'});
       expect((await pool.query('SELECT to_regclass($1) AS table_name',[`${schema}.fallo_temporal`])).rows[0].table_name).toBeNull();
-      expect((await pool.query('SELECT count(*)::int AS n FROM pgmigrations')).rows[0].n).toBe(1);
+      expect((await pool.query('SELECT count(*)::int AS n FROM pgmigrations')).rows[0].n).toBe(2);
     });
   } finally {
     if(dirname(resolve(dir))===resolve(tmpdir())&&basename(dir).startsWith('p02-migrations-'))await rm(dir,{recursive:true,force:true});

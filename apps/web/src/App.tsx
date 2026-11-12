@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Route, Routes } from 'react-router';
 import { checkHealth } from './health';
+import { AuthArea, Login, Account } from './Auth';
 
 function Home() {
   const health = useQuery({ queryKey: ['health'], queryFn: ({ signal }) => checkHealth(signal) });
@@ -47,7 +48,7 @@ export function App() {
       <div className="page-shell">
         <header className="project-header">
           <p className="eyebrow">CHAMBA DIARIA <span aria-hidden="true">/</span> PROYECTO 02</p>
-          <span className="development-label">En desarrollo</span>
+          <nav aria-label="Principal"><Link to="/">Inicio</Link><Link to="/cuenta">Mi cuenta</Link></nav>
         </header>
         <main id="contenido" tabIndex={-1}>
           <div className="intro">
@@ -56,9 +57,13 @@ export function App() {
           </div>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route element={<AuthArea />}>
+              <Route path="/acceso" element={<Login />} />
+              <Route path="/cuenta" element={<Account />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <p className="scope-note">Base técnica en desarrollo. El acceso de usuarios y la gestión de solicitudes todavía no están disponibles.</p>
+          <p className="scope-note">Acceso de usuarios disponible. La gestión de solicitudes está en desarrollo.</p>
         </main>
         <footer>CHAMBA DIARIA · Aprender construyendo</footer>
       </div>

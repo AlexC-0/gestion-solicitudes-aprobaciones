@@ -1,14 +1,15 @@
 import { extname, resolve } from 'node:path';
-import express from 'express';
+import express, { type Router } from 'express';
 import { errorHandler, notFound } from './errors.js';
 
-export function createApp(options: { webDistPath?: string } = {}) {
+export function createApp(options: { webDistPath?: string; authRouter?: Router } = {}) {
   const app = express();
   app.disable('x-powered-by');
 
   app.get('/api/health', (_request, response) => {
     response.set('Cache-Control', 'no-store').json({ status: 'ok' });
   });
+  if (options.authRouter) app.use('/api/auth', options.authRouter);
   // Resolver la API antes de cualquier archivo estático o fallback de navegación.
   app.use('/api', notFound);
 

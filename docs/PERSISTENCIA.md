@@ -15,7 +15,7 @@ La aplicación HTTP no necesita una conexión para servir health o el frontend.
 
 Todas las fechas son timestamptz. UUID se genera con gen_random_uuid() de PostgreSQL;
 los datos iniciales usan UUID estables. No hay cascadas de borrado. Los tipos serán
-material, software y formacion, con nombres castellanos. No se crean tablas de sesiones.
+material, software y formacion, con nombres castellanos. La fase 03 no creó sesiones; fase 04 añade la tabla del adaptador descrita al final.
 
 ## Integridad SQL
 
@@ -48,7 +48,7 @@ terminales, texto plano sin HTML, creación del evento junto a cada cambio y res
 que el estado almacenado en solicitudes coincida con su historial. Tampoco impide
 por sí sola editar/borrar eventos mediante SQL autorizado.
 
-En esta fase solo se prueba infraestructura, restricciones y transacciones. No se
+En las pruebas originales de fase 03 solo se comprueba infraestructura, restricciones y transacciones. No se
 acredita autenticación, autorización ni el flujo funcional completo.
 
 ## Entorno propio y herramientas
@@ -139,8 +139,8 @@ Un conflicto aborta toda la transacción; no modifica o borra filas existentes.
 Si se pierde el archivo privado teniendo usuarios, se detiene en lugar de regenerarlo.
 El bloqueo de tablas serializa seeds; no es una solución de concurrencia de solicitudes.
 
-npm test sigue ejecutando 15 pruebas sin base: 10 API y 5 frontend.
-Las 16 pruebas de test:integration crean cada vez esquemas p02_test_<UUID> propios,
+La fase 03 aportó 15 pruebas sin base: 10 API y 5 frontend, conservadas en fase 04.
+Las 16 pruebas originales de persistencia y las nuevas de autenticación crean esquemas p02_test_<UUID> propios,
 conectadas como p02_test. Se consulta current_database antes de preparación/limpieza;
 solo se elimina el esquema cuya creación confirmó esa ejecución. El app de prueba
 creado por db:migrate:test se conserva. DATABASE_URL se requiere además para probar
@@ -164,8 +164,9 @@ El script exige CI=true y configuración CI explícita. Credenciales desechables
 exclusivas del runner; administrador solo para bootstrap. Ejecuta migraciones dos
 veces, integración y los controles existentes. La primera ejecución de 0850ddc
 (43197088648) inicializó el contenedor pero falló en npm ci; no ejecutó bootstrap SQL
-ni los controles posteriores. La reparación fija Node 24.22.2 y npm 11.19.1 efectivo
-en CI. Falta publicar y verificar un run satisfactorio del commit de corrección.
+ni los controles posteriores. La reparación ff60200 cerró persistencia con CI
+43199015562 SUCCESS y fijó Node 24.22.2/npm 11.19.1. La autenticación nueva requiere
+publicación y ejecución remota propias.
 
 Resultados locales y limitación de tres avisos moderados en la cadena de herramientas
 de migración: [STATUS](STATUS.md) y [DECISIONES](DECISIONES.md). No se ha repetido una
@@ -176,3 +177,31 @@ Para verificar la reparación sobre el entorno existente se usa start, no prepar
 no se regeneran datos ni credenciales. Las instrucciones prepare anteriores se
 reservan para la primera preparación de una copia nueva. El arreglo del lockfile
 no altera esquema, migraciones, seed ni garantías de aislamiento.
+
+## Sesiones — migración de fase 04
+
+202611120002_sessions.sql añade sesiones(sid varchar PRIMARY KEY, sess json NOT NULL,
+expire timestamp(6) NOT NULL), con índice expire. La representación de expire sin
+zona coincide con el adaptador connect-pg-simple; los tiempos absolutos en sess y
+la API son epoch/ISO UTC. No se cambia la migración inicial ni las cuatro tablas de negocio.
+El adaptador usa pool y schemaName explícitos, tableName sesiones y
+createTableIfMissing:false. Nunca se migra automáticamente en el arranque HTTP.
+
+El store usa cookie.expires para persistir expire, con redondeo hasta un segundo;
+el control de expiresAt en servidor evita que ese redondeo extienda el acceso.
+disableTouch:true y touch fijo conservan el vencimiento. Limpieza de caducadas cada
+60 segundos con la variación del adaptador; no se confía en la limpieza para denegar
+acceso. close detiene su temporizador antes de cerrar pool o eliminar esquema de test.
+
+La base de desarrollo conserva las credenciales existentes y añade únicamente la
+tabla de sesiones; los recorridos HTTP/navegador crean sesiones reales temporales.
+No se borran sesiones de procedencia desconocida para limpiar comprobaciones.
+Las pruebas automatizadas crean sus propios usuarios/credenciales dentro del esquema
+_test y no leen el archivo privado del seed de desarrollo.
+
+SESSION_SECRET estable y orígenes se añaden a .env mediante auth:configure sin
+sobrescribir variables. Solo server.ts carga ese archivo; no se transmite a Vite.
+Consúltese [AUTENTICACION](AUTENTICACION.md) para contrato y expiración.
+
+La persistencia quedó cerrada en ff60200/CI 43199015562 SUCCESS. Esta nueva migración
+y su autenticación aún requieren publicación manual y CI de su propio commit.

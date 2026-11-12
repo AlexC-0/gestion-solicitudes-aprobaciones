@@ -10,7 +10,7 @@ it('falla sin anunciar disponibilidad ni cerrar el proceso que ocupa el puerto',
   const address = occupied.address();
   if (!address || typeof address === 'string') throw new Error('Puerto temporal no disponible');
   const child = spawn(process.execPath, ['--import', 'tsx', 'src/server.ts'], {
-    env: { ...process.env, API_PORT: String(address.port) },
+    env: { ...process.env, API_PORT: String(address.port), SESSION_SECRET: 'a'.repeat(64), AUTH_ORIGIN_DEV: 'http://127.0.0.1:5173', SESSION_ALLOW_HTTP: 'true', DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/unreachable' },
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
