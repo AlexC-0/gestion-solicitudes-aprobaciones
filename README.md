@@ -13,7 +13,18 @@ React/Vite, Express, TypeScript estricto, PostgreSQL 18 y sesiones PostgreSQL.
 Sin registro público, administración, adjuntos, notificaciones, reasignación ni
 despliegue. Alcance en [PROJECT_BRIEF](docs/PROJECT_BRIEF.md), aceptación en
 [ACEPTACION-V1](docs/ACEPTACION-V1.md) y evidencias históricas/remotas en
-[STATUS](docs/STATUS.md). La CI final requiere publicación manual del nuevo commit.
+[STATUS](docs/STATUS.md).
+
+**V1 completada y verificada para el alcance funcional y de ejecución local
+acordado**, sobre el commit
+[9650ffbfcdd97e1d34f8049362edd1a2c8f802a2](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/9650ffbfcdd97e1d34f8049362edd1a2c8f802a2)
+y su [CI 43224311688 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43224311688).
+149 pruebas correctas: 14 API, 50 frontend, 80 de integración con PostgreSQL y
+5 E2E con Chromium sobre aplicación compilada y PostgreSQL real.
+La aceptación y la evidencia remota verificadas fueron aportadas por Alex;
+estos resultados corresponden a ese commit, no a la actualización documental posterior.
+Sin despliegue, tag ni release. Las nuevas funcionalidades o ampliaciones requieren
+otro encargo.
 
 ## Herramientas y comandos
 
@@ -61,7 +72,7 @@ usando .env.example como referencia y continúa con auth:configure, check, migra
 y seed. No apuntes pruebas a desarrollo: se exige el nombre exacto
 gestion_solicitudes_aprobaciones_test.
 
-Esta fase verificó npm ci y migraciones repetidas sobre esquemas vacíos propios;
+La fase 08 verificó npm ci y migraciones repetidas sobre esquemas vacíos propios;
 no repitió la instalación del cluster desde cero ni regeneró credenciales.
 
 ## Entorno ya preparado — desarrollo

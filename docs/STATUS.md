@@ -2,33 +2,34 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — candidata V1, fase 08
+## Estado actual — V1 completada y verificada
 
-Candidata V1 verificada localmente; pendiente de publicación manual y CI final.
+V1 aceptada para el alcance funcional y de ejecución local acordado.
+La fase de construcción y verificación ha finalizado.
 
-Punto de partida publicado: 78404615d5ecb87c14ec20e43caf4c033e08970b,
-[CI 43215189948 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43215189948),
-según evidencia verificada aportada por Alex: instalación, tipos, migraciones,
-build y 144 pruebas (14 API, 50 frontend, 80 integración).
-La corrección de fecha única está verificada remotamente. El fallo anterior de
-8733744 / CI 43213467827 queda como histórico, no como bloqueo actual.
+Evidencia final verificada aportada por Alex: commit
+[9650ffbfcdd97e1d34f8049362edd1a2c8f802a2](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/9650ffbfcdd97e1d34f8049362edd1a2c8f802a2)
+y [CI 43224311688 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43224311688).
+Controles correctos: instalación reproducible, tipos, migraciones repetidas,
+pruebas, build e instalación/ejecución de Chromium.
+**149 pruebas correctas: 14 API + 50 frontend + 80 de integración con PostgreSQL +
+5 E2E sobre aplicación compilada y PostgreSQL real.**
 
-Fase 08 añade cinco E2E versionadas con Playwright Test/Chromium, compilado,
-API real y PostgreSQL real; aislamiento por esquema, credenciales efímeras y
-contextos separados. CI preparada para ejecutarlas después del build.
-No se amplían funcionalidades ni se cambian producto o migraciones.
-
-Verificación local nueva: instalación reproducible, tipos, build y 149 casos
-distintos (14 API + 50 frontend + 80 integración + 5 E2E), sin retries en E2E.
-Proxy de desarrollo y HTML/API/assets compilados comprobados. Revisión de teclado,
-foco, etiquetas, mensajes y viewports de escritorio/móvil. Matriz A01–A13 en
+La revisión desde ChatGPT comunicada por Alex contrastó el código E2E, su
+aislamiento, la documentación A01–A13 y los logs remotos. Matriz en
 [ACEPTACION-V1](ACEPTACION-V1.md); reproducción en [PRUEBAS](PRUEBAS.md) y README.
-Estos resultados locales no acreditan la CI del workflow modificado.
+Los resultados técnicos corresponden a 9650ffb y su CI; no se atribuyen al futuro
+commit documental ni se presenta una CI de este que todavía no existe.
 
-Las referencias de fases anteriores a funcionalidades, publicación o cierre
-pendientes describen su estado histórico. No se han creado tags, releases o
-despliegues. La aceptación remota final requiere el nuevo commit publicado por
-Alex y comprobar su CI.
+Límites conservados: Chromium, viewports 1280x900 y 390x844, sin despliegue/TLS
+real ni auditorías exhaustivas. Siguen documentados tres avisos moderados
+transitivos del tooling de migraciones. Sin despliegue, tag ni release.
+Las nuevas funcionalidades o ampliaciones requieren otro encargo.
+
+Los registros siguientes conservan sus resultados locales/remotos originales,
+incluidos los pendientes de cada entrega y el fallo corregido de
+8733744 / CI 43213467827. Son históricos y no sustituyen este estado vigente.
+Alex realizará staging, commit y push de este cierre documental en GitHub Desktop.
 
 ## Preparación documental inicial — histórico
 
@@ -1481,3 +1482,39 @@ conservados; cero listeners en 3000/5173/55433 y cero Chromium headless propios
 activos. Los wrappers npm de Windows devuelven código 1 al recibir Ctrl+C,
 con mensaje de cierre correcto de HTTP/sesiones/pool. No hay procesos temporales
 pendientes de esta fase.
+
+## Cierre verificado de V1 — registro documental
+
+12 de noviembre de 2026. Aceptación y evidencia final verificadas aportadas por Alex:
+[9650ffbfcdd97e1d34f8049362edd1a2c8f802a2](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/9650ffbfcdd97e1d34f8049362edd1a2c8f802a2),
+[CI 43224311688 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43224311688).
+149 pruebas correctas: 14 API, 50 frontend, 80 de integración con PostgreSQL y
+5 E2E con Chromium, aplicación compilada y PostgreSQL real. Instalación reproducible,
+tipos, migraciones repetidas, build e instalación/ejecución del navegador correctos.
+La revisión desde ChatGPT contrastó E2E, aislamiento, A01–A13 y logs remotos.
+
+Se actualizan README, STATUS, ACEPTACION-V1, PRUEBAS y AGENTS para registrar
+la V1 completada y verificada en el alcance acordado. A01, A09 y A11 dejan de tener
+pendientes de publicación/CI resueltos por esta ejecución; se conservan A01–A13,
+los límites reales y todos los registros históricos anteriores.
+Chromium y viewports 1280x900/390x844; sin despliegue/TLS real ni auditorías
+exhaustivas. Persisten tres avisos moderados transitivos del tooling de migraciones.
+Sin despliegue, tag ni release; cualquier ampliación requiere otro encargo.
+
+Inspección inicial: ruta y raíz Git del Proyecto 02 correctas, rama main limpia,
+HEAD 9650ffbfcdd97e1d34f8049362edd1a2c8f802a2 y origin
+https://github.com/AlexC-0/gestion-solicitudes-aprobaciones.git.
+Esta sesión solo cambia documentación: no modifica código, pruebas, dependencias,
+lockfile, CI, migraciones, configuración o datos. No se ejecutan suites ni se
+arrancan PostgreSQL o servidores; no se crean procesos temporales propios.
+
+Comprobaciones documentales: revisión del diff, 23 enlaces locales válidos y destinos de
+commit/CI, desglose 14 + 50 + 80 + 5 = 149, matriz completa A01–A13 y conservación
+del histórico. git diff --check sin errores. Los cinco documentos quedan
+modificados sin staging, con HEAD y rama conservados.
+Estos controles documentales no son una nueva ejecución técnica ni una consulta
+independiente de logs remotos: la evidencia final procede de la aportada por Alex.
+
+Staging, commit y push documentales pendientes exclusivamente de Alex mediante
+GitHub Desktop. No se atribuye resultado remoto al futuro commit documental.
+Summary propuesto: docs: registrar el cierre verificado de la V1.

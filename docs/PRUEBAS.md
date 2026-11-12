@@ -89,5 +89,20 @@ compatible cuando exista. La adición de Playwright solo incorpora sus tres paqu
 Workflow: instalación, tipos, pruebas, preparación/migraciones repetidas en
 PostgreSQL efímero, integración, build, instalación de Chromium y E2E.
 Se conservan npm 11.19.1, Node 24, permisos contents: read y timeout de 10 minutos.
-Sin servicios externos o Docker local. La ejecución local no acredita la ejecución
-del workflow modificado: la aceptación remota requiere el commit publicado y su CI.
+Sin servicios externos o Docker local.
+
+La evidencia final verificada aportada por Alex corresponde al commit
+[9650ffbfcdd97e1d34f8049362edd1a2c8f802a2](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/9650ffbfcdd97e1d34f8049362edd1a2c8f802a2)
+y a [CI 43224311688 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43224311688).
+Pasaron instalación reproducible, tipos, migraciones repetidas, pruebas, build
+e instalación/ejecución de Chromium: **149 pruebas correctas** (14 API,
+50 frontend, 80 de integración con PostgreSQL y 5 E2E sobre aplicación compilada
+y PostgreSQL real). V1 completada y verificada para el alcance acordado.
+
+La aceptación conserva los límites de Chromium, los viewports 1280x900 y 390x844,
+la ausencia de despliegue/TLS real y de auditorías exhaustivas. Sin tag ni release.
+Los tres avisos moderados transitivos descritos arriba siguen pendientes de una
+actualización compatible; no impiden registrar la aceptación acordada.
+
+Este cierre solo actualiza documentación: no repite suites ni arranca servicios.
+Los resultados pertenecen a 9650ffb y su CI, no al futuro commit documental.

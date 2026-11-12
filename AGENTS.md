@@ -13,28 +13,37 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 08, candidata V1 y E2E
+## Alcance vigente: V1 cerrada y registro documental
 
-Encargo explícito: verificación final A01–A13, E2E reproducibles con Playwright
-Test/Chromium, correcciones de defectos demostrados y documentación de aceptación.
-Punto de partida 78404615d5ecb87c14ec20e43caf4c033e08970b, CI 43215189948 SUCCESS
-con 144 pruebas, según Alex. La fecha única está corregida y su fallo previo
-es histórico. Esa CI no acredita los cambios nuevos.
-Se autoriza la dependencia local Playwright y descargar su Chromium; no herramientas
-globales ni perfiles personales. E2E con compilado, API real y PostgreSQL _test,
-esquema exclusivo, current_database antes de preparar/limpiar, cuentas y secreto
-efímeros. Configura esquema de negocio y sesiones, cierra navegador/contextos,
-HTTP/store/temporizadores/pool antes de eliminar solo el esquema propio.
-Un worker, cero reintentos; sin omisiones que oculten fallos. No publiques cookies,
-tokens, contraseñas, estados autenticados o trazas de login.
-Conserva producto, datos, credenciales y migraciones; instancia existente solo
-status/start/stop, sin prepare/reset/initdb. No amplíes funcionalidades.
-Aceptación remota final pendiente de publicación manual y CI del nuevo commit.
+La construcción y verificación de V1 han finalizado. V1 completada y verificada
+para el alcance funcional y de ejecución local acordado, sobre el commit
+[9650ffbfcdd97e1d34f8049362edd1a2c8f802a2](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/9650ffbfcdd97e1d34f8049362edd1a2c8f802a2)
+y [CI 43224311688 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43224311688), según evidencia final verificada aportada por Alex.
+149 pruebas correctas: 14 API, 50 frontend, 80 de integración con PostgreSQL y
+5 E2E con Chromium sobre aplicación compilada y PostgreSQL real.
+No atribuyas estos resultados a commits posteriores.
+
+El encargo vigente es exclusivamente documental: actualizar el cierre y la
+aceptación, conservar el histórico y comprobar diff, enlaces y cifras.
+No cambies código, pruebas, dependencias, lockfile, CI, migraciones, configuración
+ni datos. No arranques PostgreSQL o servidores ni repitas suites para este cierre.
+Las autorizaciones de construcción anteriores no amplían este encargo.
+Nuevas funcionalidades, infraestructura o ampliaciones requieren otro encargo.
+
+Límites: Chromium, viewports 1280x900 y 390x844, sin despliegue/TLS real ni auditorías
+exhaustivas. Tres avisos moderados transitivos de tooling de migraciones documentados.
 Sin tags, releases, despliegue ni cambios de CV, LinkedIn o portfolio.
 
-Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
-pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
-No es necesario pedir otra autorización para estas tareas ordinarias.
+## Garantías técnicas para futuros encargos autorizados
+
+Conserva producto, datos, credenciales y migraciones publicadas. Usa exclusivamente
+la instancia PostgreSQL propia existente; sin prepare/reset/initdb para verificar.
+E2E con compilado, API real y PostgreSQL _test, esquema exclusivo y comprobación
+current_database antes de preparar/limpiar; cuentas y secreto efímeros.
+Configura esquema de negocio y sesiones, cierra navegador/contextos,
+HTTP/store/temporizadores/pool antes de eliminar solo el esquema propio.
+No uses perfiles personales del navegador. Un worker, cero reintentos; sin omisiones que oculten fallos. No publiques cookies,
+tokens, contraseñas, estados autenticados o trazas de login.
 
 - Dos workspaces privados: apps/web (React/Vite) y apps/api (Express), con raíz
   privada, Node.js 24, TypeScript estricto y un único package-lock.json raíz.
@@ -51,9 +60,10 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
 - Proxy /api en desarrollo y mismo origen al servir compilados con Express.
   API/archivos inexistentes no deben caer en el fallback HTML.
 - Lee docs/PERSISTENCIA.md antes de cambiar esquema, migraciones o seed.
-- Se autorizan PostgreSQL 18 propio en .local/, roles/bases exclusivos, migraciones,
-  pool pg, transacciones, seed ficticio Argon2id e integración real. No se necesita
-  otra confirmación para preparar/arrancar esta instancia local autorizada.
+- Entorno existente: PostgreSQL 18 propio en .local/, roles/bases exclusivos,
+  migraciones, pool pg, transacciones, seed ficticio Argon2id e integración real.
+  Su uso futuro debe respetar el alcance del encargo vigente; este cierre no
+  autoriza preparar/arrancar servicios.
 - Usa 127.0.0.1:55433 o un puerto libre explícito, SCRAM y roles ordinarios separados.
   No reinicialices datos, uses trust persistente ni instales un servicio Windows.
 - Antes de preparar/limpiar pruebas, exige TEST_DATABASE_URL y consulta
@@ -131,4 +141,4 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   sin NUL/surrogates aislados ni HTML; conserva el contrato SOLICITUDES.
 - Sin reintentos automáticos de escritura. Un fallo de red tras POST puede dejar
   un borrador guardado: ofrece comprobar el listado antes de repetir.
-- La fase 08 autoriza verificación final local; no declares aceptación remota sin CI del nuevo commit.
+- V1 aceptada sobre 9650ffb y CI 43224311688; no atribuyas ese resultado a commits posteriores ni inicies ampliaciones sin otro encargo.
