@@ -12,6 +12,25 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_USER: p02_ci_admin
+          POSTGRES_PASSWORD: disposable-runner-admin
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U p02_ci_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      CI_ADMIN_URL: postgresql://p02_ci_admin:disposable-runner-admin@127.0.0.1:5432/postgres
+      CI_DATABASE_PASSWORD: disposable-runner-application
+      DATABASE_URL: postgresql://p02_ci_dev:disposable-runner-application@127.0.0.1:5432/gestion_solicitudes_aprobaciones
+      TEST_DATABASE_URL: postgresql://p02_ci_test:disposable-runner-application@127.0.0.1:5432/gestion_solicitudes_aprobaciones_test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -21,6 +40,20 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Esperar PostgreSQL del runner
+        run: |
+          for attempt in {1..30}; do
+            if docker exec "${{ job.services.postgres.id }}" pg_isready -U p02_ci_admin -d postgres; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+      - run: node scripts/ci-database.mjs
       - run: npm run typecheck
       - run: npm test
+      - run: npm run db:check:test
+      - run: npm run db:migrate:test
+      - run: npm run db:migrate:test
+      - run: npm run test:integration
       - run: npm run build

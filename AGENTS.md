@@ -13,9 +13,9 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: base fullstack ejecutable
+## Alcance vigente: fase 03, persistencia PostgreSQL
 
-El nuevo encargo sustituye las restricciones temporales de la sesión documental.
+El encargo de fase 03 sustituye las restricciones temporales de la fase fullstack.
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
 No es necesario pedir otra autorización para estas tareas ordinarias.
@@ -31,9 +31,21 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   manual. Accesibilidad por teclado, foco visible y diseño adaptable.
 - Proxy /api en desarrollo y mismo origen al servir compilados con Express.
   API/archivos inexistentes no deben caer en el fallback HTML.
-- CI inicial: instalación, tipos, pruebas y build; sin bases, secretos o despliegue.
-- No implementes autenticación, sesiones, roles, CSRF, solicitudes o persistencia.
-  No crees bases, migraciones, tablas o datos iniciales. No inicies PostgreSQL.
+- Lee docs/PERSISTENCIA.md antes de cambiar esquema, migraciones o seed.
+- Se autorizan PostgreSQL 18 propio en .local/, roles/bases exclusivos, migraciones,
+  pool pg, transacciones, seed ficticio Argon2id e integración real. No se necesita
+  otra confirmación para preparar/arrancar esta instancia local autorizada.
+- Usa 127.0.0.1:55433 o un puerto libre explícito, SCRAM y roles ordinarios separados.
+  No reinicialices datos, uses trust persistente ni instales un servicio Windows.
+- Antes de preparar/limpiar pruebas, exige TEST_DATABASE_URL y consulta
+  current_database(): debe ser gestion_solicitudes_aprobaciones_test. Crea esquemas
+  nuevos propios y elimina solo los creados por esa ejecución; nunca el esquema app.
+- Migraciones/seed explícitos; no se ejecutan al arrancar HTTP. No cambies en silencio
+  contraseñas, roles o asignaciones existentes. No muestres credenciales.
+- CI: PostgreSQL 18 efímero del runner con roles propios, readiness, migraciones,
+  integración y controles existentes; no necesita Docker local ni credenciales locales.
+- No implementes autenticación, sesiones, autorización, CSRF, endpoints o pantallas
+  de solicitudes. No añadas ORM ni servicios externos. No avances a autenticación.
 - No instales herramientas globales ni cambies Node.js o servicios del sistema.
   No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
 - Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
@@ -55,7 +67,7 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   Frontend con configuración apropiada para Vite. Mantén capas sencillas.
 - Conserva .gitattributes y el lockfile. Excluye dependencias, builds, logs,
   variables locales y resultados de pruebas. No versiones ni muestres secretos.
-- Cuando se autorice persistencia: SQL parametrizado, migraciones versionadas,
+- Persistencia: SQL parametrizado, migraciones versionadas,
   transición/evento atómicos y bases propias separadas. La de pruebas terminará
   en _test; limpia solo esquemas identificados como propios, nunca datos ajenos.
 - Antes de instalar software global o preparar servicios nuevos fuera de este
@@ -65,6 +77,8 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
 
 - Ante código: npm run typecheck, npm test y npm run build. Verifica npm ci sin
   cambios de lockfile y prueba comportamiento observable, sin casos artificiales.
+- Ejecuta npm run test:integration con PostgreSQL real; una base ausente debe fallar,
+  nunca omitir pruebas. Detén la instancia propia tras verificar y conserva sus datos.
 - Comprueba HTTP real al cambiar el arranque, el servicio compilado de HTML/assets,
   los 404 API y la comunicación mediante proxy. Si hay navegador, revisa la interfaz;
   si no, diferencia HTTP/componentes de la revisión visual pendiente.

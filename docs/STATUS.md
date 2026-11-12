@@ -2,17 +2,20 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — base fullstack
+## Estado actual — fase 03, persistencia
 
-API Express y frontend React/Vite implementados para esta fase mínima, con
-workspaces, lockfile, TypeScript estricto, pruebas y workflow inicial. No hay
-autenticación, solicitudes, persistencia ni despliegue. El alcance funcional de
-PROJECT_BRIEF.md se conserva sin cambios.
+Modelo PostgreSQL, migraciones, pool/transacciones, seed ficticio Argon2id y 16
+pruebas de integración añadidos. La base fullstack se conserva, sin autenticación,
+sesiones ni endpoints/pantallas de negocio. PROJECT_BRIEF.md no cambia.
 
-La documentación anterior está publicada en `5ef10e5`. Esta base fullstack es una
-entrega nueva local, pendiente de revisión, commit y push manuales de Alex.
-Los apartados de preparación/publicación siguientes son registros históricos;
-la evidencia de esta fase se recoge al final del documento.
+La fase 02 está publicada en b45c3f12998a76e00263e27de054ef7962ced9a7. Alex aportó
+la comprobación de [CI 43191106078](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43191106078),
+SUCCESS con 15 pruebas. Ese resultado solo acredita ese commit. Esta fase 03 queda
+local y su CI remota pendiente de revisión, commit y push manuales de Alex.
+
+Los apartados siguientes conservan el historial; los resultados actuales de
+persistencia están al final. Las referencias a Proyecto 01 son históricas:
+no se inspeccionó ni modificó en esta fase.
 
 ## Preparación documental inicial — histórico
 
@@ -275,3 +278,135 @@ es Chrome y dos tamaños de pantalla; falta CI Linux remota tras publicar.
 
 Tras revisión, commit y push manuales y comprobación de su CI, el siguiente hito
 recomendado es el modelo de datos y la persistencia propia. No se comienza ahora.
+
+## Fase 03 — persistencia PostgreSQL propia, 12/11/2026
+
+### Inspección y alcance
+
+Ruta/raíz Git: C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones.
+Inicio en main, árbol limpio, HEAD y origin/main en b45c3f1, sin avances posteriores
+en las referencias locales. Origin: https://github.com/AlexC-0/gestion-solicitudes-aprobaciones.git.
+Lectura previa de AGENTS, README, PROJECT_BRIEF, DECISIONES y STATUS. Se tomó como
+evidencia histórica la comprobación de CI aportada expresamente por Alex; no se
+atribuye esa ejecución a estos cambios ni se afirma otra consulta remota nueva.
+
+No existían .env ni cluster/configuración PostgreSQL propios. Se preparó el entorno
+autorizado exclusivamente en Proyecto 02. No se inspeccionó, copió ni modificó
+ningún archivo, credencial, cluster o servicio del Proyecto 01.
+
+### Entrega y decisiones
+
+Cuatro tablas: usuarios, tipos_solicitud, solicitudes y eventos_solicitud; UUID,
+timestamptz, evento inicial NULL → borrador, relaciones sin cascadas, cinco estados,
+coherencia de fechas/envío/responsable/finalización, longitudes e índices justificados.
+El diseño se escribió en PERSISTENCIA antes de la migración. No hay tablas de sesiones.
+SQL no implementa permisos, sincronización de estado e historial ni concurrencia del
+flujo funcional: corresponden a servicios posteriores. PROJECT_BRIEF no se modificó.
+
+pg 8.23.1, @types/pg 8.23.1, node-pg-migrate 9.0.0 y argon2 0.45.2, versiones exactas.
+Node 24.13.0/npm 11.6.2 y TypeScript estricto conservados. Pool máximo 5, tiempos
+limitados, transacción con el mismo cliente, errores seguros y cierre explícito.
+Migraciones/seed manuales, sin dependencia de PostgreSQL desde health o frontend.
+
+### Entorno realmente preparado
+
+PostgreSQL 18.6 x64 EDB, procedencia y SHA-256 en [PERSISTENCIA](PERSISTENCIA.md).
+Binarios/cluster/logs/configuración privada: .local/postgres. Escucha 127.0.0.1:55433,
+auth SCRAM desde initdb, sin servicio Windows, PATH global o Docker local.
+Roles p02_dev/p02_test ordinarios, cada uno propietario de su base exclusiva; SQL
+confirmó rolsuper=false, rolcreatedb=false y rolcreaterole=false para ambos.
+p02_admin se utilizó únicamente para preparación, nunca como credencial habitual.
+ACL privadas aplicadas; secretos excluidos y nunca impresos.
+
+Durante el primer prepare, capturar pipes de pg_ctl bloqueó el proceso Node tras
+arrancar PostgreSQL. Se detuvo exclusivamente ese cluster, se corrigió pg_ctl a
+stdio ignore y se completaron roles/configuración conservando los datos, sin initdb
+adicional. start/stop y prepare repetido quedaron verificados con el script corregido.
+No se afirma una segunda preparación desde cero: no se reinicializó el cluster.
+
+### Pruebas y evidencia
+
+| Comando o comprobación | Resultado local |
+| --- | --- |
+| npm ci --no-fund | Correcto; 281 paquetes añadidos, 284 auditados; lockfile conservado |
+| npm run typecheck | Correcto en API y frontend |
+| npm test | 15 correctas: 10 API y 5 frontend, sin PostgreSQL |
+| npm run build | Correcto en ambos workspaces |
+| npm run db:check / db:check:test | Conexión autenticada y nombre real de ambas bases correctos |
+| npm run db:migrate / db:migrate:test | Primera ejecución 1 migración; segunda 0, en ambas bases |
+| npm run db:seed repetido | Correcto, cuatro usuarios y tres tipos, sin duplicados ni solicitudes |
+| npm run test:integration con PostgreSQL | 16 correctas en un archivo; 31 pruebas distintas contando las existentes |
+| test:integration con PostgreSQL detenido | Fallo esperado, código 1, preflight sin preparar esquemas; no se contabiliza como suite aprobada |
+| node --check de ambos scripts mjs | Correcto |
+| npm start y peticiones HTTP reales sin PostgreSQL | Health 200 con JSON exacto, HTML castellano 200, JS/CSS 200, API desconocida/.env/asset ausente 404 JSON |
+
+Hash SHA-256 final del lockfile antes y después de npm ci:
+`8DAD081EE634096D00EF65BBFD99FCB50E9528AF9B1A73A06CB54BE9E5EFC7F7`.
+
+Las pruebas nuevas acreditan rollback real de DDL fallido (división por cero),
+registro único de migración, restricciones SQL, lectura, dos escrituras confirmadas,
+rollback si falla la segunda, liberación de conexión y rollback por error de aplicación.
+Seed repetido conserva filas completas, hashes, IDs, fechas y asignaciones; conflictos
+se rechazan. Una URL distinta hacia desarrollo es rechazada tras current_database;
+no se ejecuta preparación. La prueba de esquemas anidados acredita que limpiar uno
+no borra otro. También se exige TEST_DATABASE_URL explícita sin fallback.
+
+La primera integración obtuvo 15/16: el test esperaba 23503 al borrar relaciones
+ON DELETE RESTRICT, cuyo código real fue 23001. Se ajustó la expectativa y se verificó
+además el FK de responsable con una fila válida en los demás campos. La versión
+corregida pasó las 16 pruebas; no se debilitaron las restricciones SQL.
+
+Estado SQL tras comprobar: desarrollo 4 usuarios/3 tipos/0 solicitudes/0 eventos;
+app de prueba 0 filas de negocio. Cero esquemas p02_test_ residuales en ambas bases.
+La semilla no inventa solicitudes. Credenciales: .local/seed-credentials.json privado.
+
+### Limitaciones y cierre
+
+npm audit informa 3 avisos moderados en la cadena node-pg-migrate/glob/minimatch;
+se conserva la herramienta con useGlob:false y directorio fijo. No se aplicó fix --force.
+npm ls identifica @emnapi/wasi-threads como extraneous, aunque npm ci exige su entrada
+opcional en el lockfile. npm prune no la eliminó; retirarla produjo EUSAGE. npm
+restauró la entrada requerida y la instalación reproducible final conserva exactamente
+el hash anterior. Se registra esta inconsistencia de npm, sin añadir una dependencia
+directa artificial ni afirmar un árbol libre de avisos. No impide tipos, pruebas o build.
+
+CI ampliada con servicio postgres:18.6, readiness mediante pg_isready del contenedor,
+roles ordinarios de CI, migraciones repetidas e integración. El bootstrap de CI y el
+workflow Linux requieren su ejecución remota; no se declaran probados en el runner.
+La CI satisfactoria 43191106078 pertenece únicamente al commit anterior b45c3f1.
+
+Frontend y arranque funcional no cambiaron; no se repitió revisión visual ni E2E.
+No se implementaron login, sesiones, CSRF, permisos, endpoints de solicitudes ni
+resolución concurrente. No hay servicios cloud, ORM o despliegue.
+
+Revisión de archivos versionables: 46 archivos, JSON válidos, bloques Markdown
+cerrados y enlaces locales existentes; comparación contra secretos privados sin
+coincidencias. .env, .local, node_modules y builds excluidos. git diff --check sin
+errores; avisos LF/CRLF respetan .gitattributes existente. PROJECT_BRIEF.md, .gitignore,
+.gitattributes y frontend permanecen idénticos a HEAD.
+
+HTTP cerró mediante Ctrl+C. La instancia propia queda detenida, con datos conservados.
+Rama main, HEAD b45c3f1 y origin sin cambios; 10 archivos modificados y 13 nuevos,
+sin staging. No hubo commits, push, tags, releases, cambios de remoto ni publicación.
+
+### Archivos de fase 03
+
+Modificados:
+
+- README.md, AGENTS.md, docs/DECISIONES.md y docs/STATUS.md.
+- package.json y package-lock.json.
+- apps/api/package.json, apps/api/tsconfig.json y apps/api/vitest.config.ts.
+- .github/workflows/ci.yml.
+
+Nuevos:
+
+- .env.example y docs/PERSISTENCIA.md.
+- apps/api/migrations/202611120001_initial.sql.
+- apps/api/src/persistence/database.ts, migrate.ts, seed.ts y cli.ts.
+- apps/api/tests/integration/preflight.ts, isolation.ts y persistence.test.ts.
+- apps/api/vitest.integration.config.ts.
+- scripts/postgres-local.mjs y scripts/ci-database.mjs.
+
+Comandos de reproducción desde la raíz: [README](../README.md) y
+[PERSISTENCIA](PERSISTENCIA.md). Próximo paso recomendado, tras revisión y publicación
+manual con su CI propia: autenticación y sesión de usuario. No se comienza en esta fase.

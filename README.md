@@ -9,7 +9,8 @@ React/Vite y Express se comunican por HTTP real. La página inicial permite
 comprobar la conexión, muestra carga, éxito o error y ofrece reintento manual.
 También existe una vista de página no encontrada.
 
-No hay autenticación, sesiones, roles implementados, solicitudes ni persistencia.
+Hay esquema PostgreSQL, migraciones, pool/transacciones y seed ficticio con roles.
+No hay autenticación, sesiones, autorización ni gestión funcional de solicitudes.
 GET /api/health solo acredita que el proceso HTTP responde: no comprueba PostgreSQL
 ni la disponibilidad completa del sistema. No hay despliegue.
 
@@ -17,7 +18,8 @@ ni la disponibilidad completa del sistema. No hay despliegue.
 
 Node.js 24 (>=24.13.0 y <25) y npm 11. Versiones comprobadas localmente: Node.js
 24.13.0 y npm 11.6.2. Los paquetes raíz/web/api son privados y comparten un único
-package-lock.json. No necesitas PostgreSQL para esta fase.
+package-lock.json. PostgreSQL es necesario para persistencia e integración; la
+pantalla inicial, health y npm test funcionan sin él.
 
 Desde PowerShell, en la carpeta del proyecto:
 
@@ -67,8 +69,10 @@ npm run dev
 ```
 
 Abre http://127.0.0.1:5174 en ese caso. En Linux/macOS se pueden pasar las variables
-al proceso con `API_PORT=3100 WEB_PORT=5174 npm run dev`. No se necesita .env ni se
-ha configurado su carga automática; no hay variables secretas en esta fase.
+al proceso con `API_PORT=3100 WEB_PORT=5174 npm run dev`. Los scripts HTTP
+siguen tomando los puertos del entorno. Los comandos de persistencia e integración
+cargan .env raíz mediante Node; variables ya definidas en la terminal tienen prioridad.
+DATABASE_URL y TEST_DATABASE_URL son privadas y nunca se exponen con VITE_.
 
 ## Ejecución local compilada
 
@@ -117,19 +121,58 @@ Versiones concretas y motivos en [DECISIONES](docs/DECISIONES.md).
 ## Validación, publicación y límites
 
 Las comprobaciones locales y su alcance están en [STATUS](docs/STATUS.md).
-La CI preparada ejecuta instalación, tipos, pruebas y build con Node.js 24 en
-push a main y pull requests. Su ejecución remota queda pendiente de que Alex
-publique esta entrega; no se da por aprobada por las comprobaciones locales.
+La fase fullstack está publicada en b45c3f12998a76e00263e27de054ef7962ced9a7;
+Alex verificó su [CI 43191106078](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43191106078)
+con SUCCESS y 15 pruebas. Ese resultado pertenece solo a ese commit.
+La CI ampliada con PostgreSQL requiere publicación manual y su propia ejecución.
+Todos los cambios de persistencia quedan locales, sin staging, commit ni push por
+Codex. Alex realiza esas operaciones desde GitHub Desktop.
 
-La documentación anterior está publicada en `5ef10e5`. Los cambios de esta fase
-fullstack quedan locales, sin staging, commit ni push por parte de Codex. Alex
-realiza esas operaciones exclusivamente desde GitHub Desktop en el repositorio
-[AlexC-0/gestion-solicitudes-aprobaciones](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones).
+El proyecto tiene entorno PostgreSQL propio e independiente del Proyecto 01.
+Autenticación, permisos y gestión de solicitudes siguen pendientes. No hay despliegue.
 
-El proyecto es independiente del Proyecto 01. Bases de datos, migraciones,
-autenticación y gestión de solicitudes siguen fuera de esta fase. La revisión
-puntual en Chrome no equivale a una suite E2E de Playwright ni a una auditoría
-completa de accesibilidad.
+## Persistencia local — Windows
+
+Desde la raíz, después de npm ci:
+
+```powershell
+npm run db:local -- status
+npm run db:local -- prepare
+npm run db:local -- start
+npm run db:check
+npm run db:migrate
+npm run db:seed
+npm run db:check:test
+npm run db:migrate:test
+npm run test:integration
+npm run db:local -- stop
+```
+
+prepare descarga PostgreSQL 18.6 de EDB si hace falta, crea el entorno exclusivamente
+en .local/postgres y genera .env privado. La primera preparación arranca el servidor;
+start es repetible. Un entorno preparado no se reinicializa. Si 55433 está ocupado,
+usa `npm run db:local -- prepare --port=55434` antes de crear el entorno.
+No altera servicios globales ni PATH. Conserva los datos al detenerlo.
+
+| Comando | Destino y resultado |
+| --- | --- |
+| npm run db:check | Comprueba conexión e identidad de la base de desarrollo |
+| npm run db:migrate | Aplica migraciones pendientes en desarrollo |
+| npm run db:seed | Prepara 2 solicitantes, 2 revisores y 3 tipos; no crea solicitudes |
+| npm run db:check:test | Comprueba identidad de la base de pruebas |
+| npm run db:migrate:test | Aplica migraciones en app de la base de pruebas |
+| npm run test:integration | 16 pruebas con esquemas nuevos propios y PostgreSQL real |
+| npm run db:local -- status/start/stop | Consulta/inicia/detiene solo la instancia propia |
+
+Contraseñas ficticias iniciales: `.local/seed-credentials.json`, archivo privado.
+No se imprimen ni versionan. Repetir seed conserva hashes, roles y asignaciones;
+si detecta conflictos falla sin sobrescribirlos. No borres ese archivo para regenerarlas.
+La integración exige TEST_DATABASE_URL; también usa DATABASE_URL para verificar
+que el destino de desarrollo se rechaza antes de crear esquemas. Ambas están en .env.
+No se ejecutan migraciones ni seed automáticamente desde la API.
+
+Consulta [PERSISTENCIA](docs/PERSISTENCIA.md) para esquema, límites SQL, configuración,
+auth SCRAM, permisos, procedimientos y alcance de las pruebas.
 
 - [Definición funcional, sin cambios](docs/PROJECT_BRIEF.md).
 - [Decisiones y asuntos pendientes](docs/DECISIONES.md).

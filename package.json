@@ -16,7 +16,14 @@
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test --workspaces",
     "build": "npm run build --workspaces",
-    "start": "node apps/api/dist/server.js --serve-web"
+    "start": "node apps/api/dist/server.js --serve-web",
+    "db:local": "node scripts/postgres-local.mjs",
+    "db:check": "node --env-file-if-exists=.env --import tsx apps/api/src/persistence/cli.ts check",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx apps/api/src/persistence/cli.ts migrate",
+    "db:seed": "node --env-file-if-exists=.env --import tsx apps/api/src/persistence/cli.ts seed",
+    "db:check:test": "node --env-file-if-exists=.env --import tsx apps/api/src/persistence/cli.ts check --test",
+    "db:migrate:test": "node --env-file-if-exists=.env --import tsx apps/api/src/persistence/cli.ts migrate --test",
+    "test:integration": "node --env-file-if-exists=.env node_modules/vitest/vitest.mjs run --config apps/api/vitest.integration.config.ts"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

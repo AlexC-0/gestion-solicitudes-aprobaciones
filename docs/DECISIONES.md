@@ -100,7 +100,7 @@ Referencias técnicas consultadas: [rutas Express 5](https://expressjs.com/en/gu
 Las declaraciones de engines y peers se consultaron en el registro oficial npm;
 la instalación estricta y la compilación validan la combinación elegida localmente.
 
-## Pendiente antes de implementar el negocio
+## Pendientes registrados al cerrar fase 02 — histórico
 
 - Modelo de datos, IDs, restricciones, migraciones y bases propias separadas de
   desarrollo/pruebas; concretar representación del evento inicial y concurrencia.
@@ -124,6 +124,40 @@ Alex creó y publicó el repositorio público y su documentación inicial en
 `5ef10e52dcaf1c5229eb4cc3fb87fc6a186f25e7`. El intento fallido de crear el remoto
 por Codex es histórico y no representa un bloqueo actual.
 
-La base fullstack de esta fase queda local, sin staging, commit o push. Esas
+La base fullstack fue publicada por Alex en b45c3f1, con CI 43191106078 SUCCESS.
+Los cambios de fase 03 quedan locales, sin staging, commit o push. Esas
 operaciones siguen reservadas a Alex desde GitHub Desktop. No se crea otro
 repositorio ni se cambia origin. No hay despliegue. Resultados en [STATUS](STATUS.md).
+
+## Fase 03 — persistencia autorizada
+
+Se conserva PROJECT_BRIEF.md. El modelo concretado antes de las migraciones está
+estrechamente limitado a usuarios, tipos, solicitudes y eventos; las sesiones
+esperan al adaptador de autenticación. SQL garantiza integridad de filas y relaciones,
+no permisos ni continuidad de transiciones. Detalles en [PERSISTENCIA](PERSISTENCIA.md).
+
+- PostgreSQL 18.6 EDB, cluster privado en .local/postgres, loopback 55433, SCRAM,
+  bases y roles de desarrollo/pruebas independientes. Administración solo al preparar.
+- pg 8.23.1 y @types/pg 8.23.1: pool pequeño, SQL parametrizado y transacciones con
+  una conexión. Sin ORM ni repositorios genéricos anticipados.
+- node-pg-migrate 9.0.0: herramienta mantenida, migraciones SQL versionadas,
+  registro, bloqueo y ejecución transaccional. Se desactiva glob y se fija directorio.
+- argon2 0.45.2: Argon2id con memoria 65536 KiB, tiempo 3, paralelismo 1 y hash 32
+  bytes. Credenciales aleatorias en archivo privado; seed transaccional que comprueba
+  los valores existentes sin modificarlos. Biblioteca nativa compatible con Node 24.
+- Scripts raíz usan --env-file-if-exists=.env, sin fallback de test a desarrollo.
+  El pool nunca se importa desde el arranque HTTP; health conserva su contrato.
+- Integración consulta current_database antes de CREATE y DROP. Cada ejecución
+  limpia únicamente sus esquemas aleatorios; no limpia app ni esquemas desconocidos.
+- CI usa postgres:18.6 con readiness y roles no superusuario en bases del runner.
+  Sus credenciales desechables son exclusivas de CI, no secretos locales reutilizados.
+
+La instalación informa de 3 avisos moderados: node-pg-migrate y su cadena glob/minimatch
+(GHSA-3g3m-2fjr-6pw4 y GHSA-g3hv-75wg-m249). Afectan a procesamiento de patrones;
+el ejecutor usa useGlob:false, directorio fijo y ningún patrón procedente de HTTP.
+Se documentan como limitación, sin afirmar ausencia de vulnerabilidades ni aplicar
+npm audit fix --force o un downgrade incompatible. Revisar actualizaciones compatibles.
+
+Estas decisiones sustituyen los pendientes de modelo, biblioteca Argon2id, provisión
+de seed y pruebas de persistencia de fase 02. Siguen pendientes autenticación,
+adaptador de sesiones, CSRF, permisos, negocio, concurrencia de resoluciones y E2E.
