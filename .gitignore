@@ -1,0 +1,48 @@
+# Dependencias y caches de herramientas
+node_modules/
+.npm/
+.vite/
+.vitest/
+.cache/
+*.tsbuildinfo
+
+# Compilados y resultados de pruebas
+dist/
+build/
+coverage/
+playwright-report/
+playwright/.cache/
+test-results/
+blob-report/
+
+# Variables y configuración local; conservar ejemplos sin secretos
+.env
+.env.*
+!.env.example
+!.env.*.example
+.local/
+*.local
+
+# Credenciales, claves y certificados privados
+secrets/
+credentials/
+*.pgpass
+pgpass.conf
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Logs y archivos temporales
+logs/
+*.log
+*.tmp
+*.swp
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# package-lock.json debe versionarse cuando exista.
