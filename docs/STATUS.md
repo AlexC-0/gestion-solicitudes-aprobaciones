@@ -2,20 +2,23 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — fase 03, persistencia
+## Estado actual — fase 03 publicada, reparación local y cierre pendiente
 
-Modelo PostgreSQL, migraciones, pool/transacciones, seed ficticio Argon2id y 16
-pruebas de integración añadidos. La base fullstack se conserva, sin autenticación,
-sesiones ni endpoints/pantallas de negocio. PROJECT_BRIEF.md no cambia.
+La persistencia está publicada en 0850ddc23f7153ed46e3bd32827d33593584d473.
+Su primera [CI 43197088648](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43197088648),
+job 131110701947, falló durante npm ci con dos entradas @emnapi ausentes.
+El contenedor PostgreSQL se inicializó, pero bootstrap SQL, tipos, pruebas,
+migraciones, integración y build quedaron omitidos. Las 31 pruebas registradas
+para esa entrega eran resultados locales, no de ese run remoto.
 
-La fase 02 está publicada en b45c3f12998a76e00263e27de054ef7962ced9a7. Alex aportó
-la comprobación de [CI 43191106078](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43191106078),
-SUCCESS con 15 pruebas. Ese resultado solo acredita ese commit. Esta fase 03 queda
-local y su CI remota pendiente de revisión, commit y push manuales de Alex.
+El lockfile se ha reparado mediante npm 11.19.1 y validado localmente de nuevo.
+La corrección está sin staging/commit/push; falta publicar y comprobar una CI
+satisfactoria de su propio commit. La fase 03 todavía no está cerrada.
+No se inicia autenticación ni se amplía funcionalidad.
 
-Los apartados siguientes conservan el historial; los resultados actuales de
-persistencia están al final. Las referencias a Proyecto 01 son históricas:
-no se inspeccionó ni modificó en esta fase.
+La CI satisfactoria 43191106078 pertenece a b45c3f1 (fase 02), no a fase 03 ni a
+esta reparación. Los apartados históricos siguientes conservan las evidencias
+de sus respectivas entregas; la corrección actual se documenta al final.
 
 ## Preparación documental inicial — histórico
 
@@ -410,3 +413,96 @@ Nuevos:
 Comandos de reproducción desde la raíz: [README](../README.md) y
 [PERSISTENCIA](PERSISTENCIA.md). Próximo paso recomendado, tras revisión y publicación
 manual con su CI propia: autenticación y sesión de usuario. No se comienza en esta fase.
+
+## Corrección del EUSAGE posterior a 0850ddc — 12/11/2026
+
+### Inspección y reproducción
+
+Ruta/raíz: C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones; main limpio,
+HEAD y origin/main en 0850ddc23f7153ed46e3bd32827d33593584d473; origin correcto y
+sin cambios posteriores en las referencias locales. Se leyeron instrucciones y
+documentos requeridos, manifiestos, .npmrc, lockfile y workflow. No se tocó Proyecto 01.
+El fallo remoto y sus versiones se toman de la evidencia verificada aportada por Alex.
+
+Node local v24.13.0 y npm global 11.6.2. Se ejecutó npm 11.19.1 temporal mediante
+npx, sin sustituir herramientas globales. Dos copias independientes en .local/lock-repair
+contenían solo manifiestos, .npmrc y lockfile, inicialmente sin node_modules ni secretos.
+
+| Escenario Windows / Node 24.13.0 | Resultado |
+| --- | --- |
+| Lockfile publicado + npm 11.19.1 ci en copia limpia | EUSAGE: Missing @emnapi/core y @emnapi/runtime 2.0.0-beta.2; coincide con CI |
+| Mismo lockfile + npm 11.6.2 ci en copia limpia | Correcto; SHA-256 original conservado |
+| Copia reparada por npm 11.19.1 install --package-lock-only | Dos entradas añadidas y metadatos peer normalizados |
+| Copia reparada + npm 11.19.1 ci | Correcto, con scripts de instalación habilitados |
+| Argon2id real en esa copia | Hash y verify correctos, sin imprimir contraseña ni hash |
+
+Causa confirmada: lockfile incompleto en la rama opcional wasm32 de rolldown;
+faltaban core/runtime exigidos también como peers por @napi-rs/wasm-runtime.
+El mismo entorno Windows cambia de aceptación a EUSAGE al cambiar solo npm.
+La validación anterior con 11.6.2 era insuficiente para la versión efectiva del runner.
+@emnapi/wasi-threads no debía eliminarse: core depende de él. Se corrige la lectura
+anterior del aviso extraneous; era evidencia del árbol incompleto. Detalle del
+contraste de código npm y de dependencias en [DECISIONES](DECISIONES.md).
+
+### Corrección mínima
+
+Lockfile reparado por npm 11.19.1 en copia limpia, sin borrar el lockfile original
+para resolver de nuevo todo el árbol. Comparación completa: ninguna versión ni
+integridad preexistente cambia. Se añaden core/runtime 2.0.0-beta.2 y npm retira
+12 flags peer redundantes; sin dependencias directas @emnapi, overrides ni omisiones.
+Manifiestos de API/frontend, fuentes, tests y migraciones publicadas no cambian.
+
+package.json añade packageManager npm@11.19.1. CI fija Node 24.22.2 y NPM_VERSION
+11.19.1, comprueba concordancia y usa npx con esa versión en instalación y controles.
+Conserva npm ci, bootstrap, readiness, tipos, pruebas, migraciones, integración y build.
+No hay continue-on-error, scripts desactivados, exclusión de opcionales ni instalación
+global. README/AGENTS explican cómo usar la misma versión localmente.
+
+### Validación final del arreglo
+
+Todos los comandos npm de esta validación se ejecutaron con el prefijo
+`npx --yes --package=npm@11.19.1 npm`, sobre Windows y Node 24.13.0.
+
+| Comando / comprobación | Resultado nuevo |
+| --- | --- |
+| ci --no-fund en raíz | Correcto: 280 paquetes añadidos, 283 auditados; lockfile sin cambios |
+| run typecheck | API y frontend correctos |
+| test | 15 aprobadas: 10 API y 5 frontend |
+| run build | API y frontend correctos |
+| run db:local -- status / start | Instancia existente inicialmente detenida; arranque correcto |
+| run db:check / db:check:test | Ambas conexiones e identidad de base correctas |
+| run db:migrate / db:migrate:test | 0 migraciones aplicadas en cada base |
+| run test:integration | 16 aprobadas; total 31 pruebas distintas, sin modificar pruebas |
+| run db:local -- stop | Instancia propia detenida, datos conservados |
+| Comparación de archivos privados antes/después | .env, seed-credentials.json, instance.json y admin-password idénticos byte a byte |
+
+SHA-256 final, igual antes/después de npm ci:
+`9A76125FC549CD336126F000B7423A188C09271F9B135C318A545D31F226960E`.
+El anterior era `8DAD081EE634096D00EF65BBFD99FCB50E9528AF9B1A73A06CB54BE9E5EFC7F7`.
+No se ejecutó prepare, seed de desarrollo, reset o reinicialización. La integración
+sigue creando y limpiando únicamente sus esquemas exclusivos de prueba.
+
+### Límites, revisión y entrega
+
+Los tres avisos moderados de node-pg-migrate/glob/minimatch siguen pendientes:
+no son la causa del EUSAGE ni se declaran corregidos. npm 11.19.1 avisa sobre
+allowScripts de argon2/esbuild; se ejecutaron instalación, hash/verify y build sin
+fallos nativos. No se ocultaron errores ni se rebajaron controles.
+
+No se pudo ejecutar Linux: wsl informó servicio deshabilitado y Docker no tenía
+daemon accesible. No se habilitó/instaló infraestructura. Node 24.22.2 del runner no
+se ejecutó localmente: el contraste controlado mantuvo Node 24.13.0 y cambió npm.
+La ejecución remota Linux y bootstrap SQL siguen pendientes del commit de arreglo.
+No se repitió revisión visual ni HTTP: frontend y arranque no cambian.
+
+Diff revisado, sin modificaciones funcionales ni de migraciones; git diff --check
+sin errores. Archivos modificados: package-lock.json, package.json,
+.github/workflows/ci.yml, README.md, AGENTS.md, docs/DECISIONES.md,
+docs/PERSISTENCIA.md y docs/STATUS.md. Ningún archivo nuevo versionable.
+Las copias diagnósticas permanecen privadas bajo .local/, excluidas de Git;
+solo hay un lockfile versionable raíz. No se copiaron bases ni credenciales allí.
+
+Estado final: main/HEAD 0850ddc y origin conservados; ocho archivos modificados,
+sin staging. Sin procesos temporales de validación; PostgreSQL 18.6 en 55433 detenido.
+Alex debe revisar y realizar commit/push desde GitHub Desktop; comprobar después
+la CI de ese commit antes de cerrar fase 03 o autorizar el siguiente hito.

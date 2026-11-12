@@ -13,9 +13,13 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 03, persistencia PostgreSQL
+## Alcance vigente: reparación de instalación de fase 03
 
-El encargo de fase 03 sustituye las restricciones temporales de la fase fullstack.
+El encargo actual corrige el EUSAGE de npm ci de 0850ddc. Limita cambios a lockfile,
+herramientas, workflow y documentación. Conserva migraciones publicadas, datos y
+credenciales. Para verificar usa start sobre la instancia existente, nunca prepare,
+reset o reinicialización. No comiences autenticación. El alcance de persistencia
+que sigue describe lo ya autorizado/implementado, sin ampliarlo en esta corrección.
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
 No es necesario pedir otra autorización para estas tareas ordinarias.
@@ -23,7 +27,10 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
 - Dos workspaces privados: apps/web (React/Vite) y apps/api (Express), con raíz
   privada, Node.js 24, TypeScript estricto y un único package-lock.json raíz.
 - Solo dependencias usadas. Comprueba engines y peers; no uses --force ni
-  --legacy-peer-deps para ocultar incompatibilidades. Usa npm ci para reproducir.
+  --legacy-peer-deps para ocultar incompatibilidades. Instala con
+  npx --yes --package=npm@11.19.1 npm ci; usa esa versión también al modificar
+  dependencias. Conserva packageManager y la versión efectiva de CI sincronizados.
+  No añadas dependencias directas artificiales para completar peers transitivos.
 - API mínima: GET /api/health con 200 y {"status":"ok"}, 404 JSON y errores
   centralizados seguros. Health no comprueba base de datos ni disponibilidad total.
 - Separa aplicación y arranque; escucha en loopback y permite cierre ordenado.

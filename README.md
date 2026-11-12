@@ -16,16 +16,23 @@ ni la disponibilidad completa del sistema. No hay despliegue.
 
 ## Requisitos e instalación
 
-Node.js 24 (>=24.13.0 y <25) y npm 11. Versiones comprobadas localmente: Node.js
-24.13.0 y npm 11.6.2. Los paquetes raíz/web/api son privados y comparten un único
+Node.js 24 (>=24.13.0 y <25) y npm 11.19.1 para instalar o modificar dependencias.
+Validación local: Node 24.13.0 con npm 11.19.1 temporal. CI fija Node 24.22.2 y
+ejecuta npm 11.19.1 explícitamente mediante npx, sin depender del npm incluido. Los paquetes raíz/web/api son privados y comparten un único
 package-lock.json. PostgreSQL es necesario para persistencia e integración; la
 pantalla inicial, health y npm test funcionan sin él.
+
+El npm global puede conservarse. npx ejecuta temporalmente la versión indicada;
+no instala herramientas globales. Usa también ese prefijo para futuras operaciones
+npm install sobre dependencias, conservando las versiones directas acordadas.
+packageManager documenta la versión y el workflow comprueba que coincide con la
+que ejecuta efectivamente. No basta con cambiar ese campo para cambiar la herramienta.
 
 Desde PowerShell, en la carpeta del proyecto:
 
 ```powershell
 cd C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones
-npm ci
+npx --yes --package=npm@11.19.1 npm ci
 npm run dev
 ```
 
@@ -41,7 +48,7 @@ Si un proceso termina, concurrently detiene el otro.
 
 | Comando | Función |
 | --- | --- |
-| npm ci | Instalar las versiones del lockfile |
+| npx --yes --package=npm@11.19.1 npm ci | Instalar el lockfile con la versión de npm fijada |
 | npm run dev | Arrancar API y Vite conjuntamente |
 | npm run typecheck | Comprobar tipos estrictos de código, configuración y pruebas |
 | npm test | Ejecutar y finalizar las pruebas de ambos workspaces, sin watch |
@@ -124,16 +131,20 @@ Las comprobaciones locales y su alcance están en [STATUS](docs/STATUS.md).
 La fase fullstack está publicada en b45c3f12998a76e00263e27de054ef7962ced9a7;
 Alex verificó su [CI 43191106078](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43191106078)
 con SUCCESS y 15 pruebas. Ese resultado pertenece solo a ese commit.
-La CI ampliada con PostgreSQL requiere publicación manual y su propia ejecución.
-Todos los cambios de persistencia quedan locales, sin staging, commit ni push por
-Codex. Alex realiza esas operaciones desde GitHub Desktop.
+La fase 03 está publicada en 0850ddc23f7153ed46e3bd32827d33593584d473. Su primera
+[CI 43197088648](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43197088648)
+falló en npm ci por un lockfile incompleto; no llegó a ejecutar tipos, pruebas,
+migraciones, integración o build. Las 31 pruebas de esa entrega eran locales.
+La reparación del lockfile se ha verificado localmente con npm 11.19.1; sigue
+pendiente publicar el arreglo y comprobar su CI. La fase 03 todavía no está cerrada.
+Alex realiza staging, commit y push exclusivamente desde GitHub Desktop.
 
 El proyecto tiene entorno PostgreSQL propio e independiente del Proyecto 01.
 Autenticación, permisos y gestión de solicitudes siguen pendientes. No hay despliegue.
 
 ## Persistencia local — Windows
 
-Desde la raíz, después de npm ci:
+Desde la raíz, después de la instalación con npm 11.19.1:
 
 ```powershell
 npm run db:local -- status

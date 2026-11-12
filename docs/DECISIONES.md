@@ -2,8 +2,8 @@
 
 Las reglas funcionales del [PROJECT_BRIEF](PROJECT_BRIEF.md) se conservan.
 La sesión inicial fue documental; su actualización está publicada en `5ef10e5`.
-El nuevo encargo autoriza la base fullstack ejecutable, dependencias locales y CI,
-sin autenticación, solicitudes o persistencia. Los nuevos cambios siguen locales.
+La persistencia de fase 03 está publicada en 0850ddc. El encargo vigente corrige
+su instalación y validación sin ampliar funcionalidades; el arreglo sigue local.
 
 ## Definido
 
@@ -125,7 +125,8 @@ Alex creó y publicó el repositorio público y su documentación inicial en
 por Codex es histórico y no representa un bloqueo actual.
 
 La base fullstack fue publicada por Alex en b45c3f1, con CI 43191106078 SUCCESS.
-Los cambios de fase 03 quedan locales, sin staging, commit o push. Esas
+La fase 03 está publicada en 0850ddc; su primera CI falló en npm ci. El arreglo
+queda local, sin staging, commit o push. Esas
 operaciones siguen reservadas a Alex desde GitHub Desktop. No se crea otro
 repositorio ni se cambia origin. No hay despliegue. Resultados en [STATUS](STATUS.md).
 
@@ -161,3 +162,43 @@ npm audit fix --force o un downgrade incompatible. Revisar actualizaciones compa
 Estas decisiones sustituyen los pendientes de modelo, biblioteca Argon2id, provisión
 de seed y pruebas de persistencia de fase 02. Siguen pendientes autenticación,
 adaptador de sesiones, CSRF, permisos, negocio, concurrencia de resoluciones y E2E.
+
+## Reparación de instalación posterior a 0850ddc
+
+La copia publicada omitía @emnapi/core y @emnapi/runtime 2.0.0-beta.2. La rama
+opcional de Vite → rolldown → @rolldown/binding-wasm32-wasi exige ambos; también son
+peers de @napi-rs/wasm-runtime 1.2.6. @emnapi/core exige @emnapi/wasi-threads 2.2.0:
+el antiguo aviso extraneous era un indicio del árbol incompleto, no razón para
+borrar esa entrada. La exclusión del binario wasm32 en Windows no autoriza omitir
+del lockfile las dependencias que el resolutor valida.
+
+Con Node 24.13.0 y Windows constantes, copias limpias del mismo lockfile:
+npm 11.6.2 acepta la instalación; npm 11.19.1 reproduce exactamente los dos Missing
+observados en CI. El código instalado de npm ci también difiere: 11.6.2 reutiliza
+Arborist al cargar el árbol virtual y construir el ideal; 11.19.1 separa ambas
+instancias para validar el inventario. La causa operativa confirmada es el lockfile
+incompleto y la diferencia de resolución/validación, no PostgreSQL ni Argon2.
+No se atribuye el fallo exclusivamente a Linux ni a una incidencia externa concreta.
+
+Se reparó una copia sin node_modules mediante npm 11.19.1 install --package-lock-only.
+Ese npm añadió las dos entradas con resolved/integrity obtenidos del registro y
+normalizó 12 indicadores peer. No cambió ninguna versión o integridad preexistente,
+no se añadieron dependencias directas/overrides ni se excluyeron opcionales.
+La instalación limpia corregida y Argon2id hash/verify se comprobaron realmente.
+
+packageManager fija npm@11.19.1 y CI comprueba su concordancia con NPM_VERSION;
+todos los comandos npm del workflow ejecutan esa versión mediante npx. Node de CI
+queda fijado a 24.22.2, igual al runner fallido, manteniendo compatibilidad local
+con 24.13.0. No se sustituye npm global. Instrucciones locales en README.
+
+Se conserva npm ci: valida la sincronización y no reescribe el lockfile, según la
+[documentación oficial de npm](https://docs.npmjs.com/cli/v11/commands/npm-ci/).
+Los tres avisos moderados continúan, separados del EUSAGE corregido. npm 11.19.1
+además avisa de allowScripts para argon2/esbuild; la instalación no falló y ambos
+funcionaron en las comprobaciones. No se desactivaron scripts ni se aprobó todo
+indiscriminadamente para ocultar un error.
+
+La validación nueva es Windows con Node 24.13.0/npm 11.19.1. WSL no pudo iniciar
+por servicio deshabilitado y Docker no tenía daemon disponible; no se instaló ni
+habilitó infraestructura. Linux/Node 24.22.2 y el bootstrap de CI requieren el nuevo
+run remoto tras publicar; la fase 03 no se declara cerrada antes de su SUCCESS.

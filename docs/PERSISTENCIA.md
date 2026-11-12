@@ -75,11 +75,11 @@ Las migraciones y seed son comandos explícitos, nunca parte del arranque HTTP.
 
 ## Preparación y configuración
 
-Requisitos: Windows, Node 24 (probado 24.13.0), npm 11 (11.6.2), PowerShell,
+Requisitos: Windows, Node 24 (probado 24.13.0), npm 11.19.1 temporal (npx), PowerShell,
 icacls y salida HTTPS a EDB/npm para la primera instalación. Desde la raíz:
 
 ```powershell
-npm ci
+npx --yes --package=npm@11.19.1 npm ci
 npm run db:local -- status
 npm run db:local -- prepare
 npm run db:local -- start
@@ -162,10 +162,17 @@ GitHub Actions prepara postgres:18.6 en el runner, espera pg_isready y crea dos
 bases con roles ordinarios mediante scripts/ci-database.mjs. No lee .env local.
 El script exige CI=true y configuración CI explícita. Credenciales desechables
 exclusivas del runner; administrador solo para bootstrap. Ejecuta migraciones dos
-veces, integración y los controles existentes. No se ha ejecutado remotamente esta
-nueva versión: requiere commit/push manuales de Alex y comprobar su propio run.
+veces, integración y los controles existentes. La primera ejecución de 0850ddc
+(43197088648) inicializó el contenedor pero falló en npm ci; no ejecutó bootstrap SQL
+ni los controles posteriores. La reparación fija Node 24.22.2 y npm 11.19.1 efectivo
+en CI. Falta publicar y verificar un run satisfactorio del commit de corrección.
 
 Resultados locales y limitación de tres avisos moderados en la cadena de herramientas
 de migración: [STATUS](STATUS.md) y [DECISIONES](DECISIONES.md). No se ha repetido una
 revisión visual completa porque no cambió el frontend. Al terminar, PostgreSQL y
 HTTP temporales quedan detenidos y los datos se conservan.
+
+Para verificar la reparación sobre el entorno existente se usa start, no prepare;
+no se regeneran datos ni credenciales. Las instrucciones prepare anteriores se
+reservan para la primera preparación de una copia nueva. El arreglo del lockfile
+no altera esquema, migraciones, seed ni garantías de aislamiento.

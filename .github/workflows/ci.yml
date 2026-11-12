@@ -27,6 +27,7 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
+      NPM_VERSION: 11.19.1
       CI_ADMIN_URL: postgresql://p02_ci_admin:disposable-runner-admin@127.0.0.1:5432/postgres
       CI_DATABASE_PASSWORD: disposable-runner-application
       DATABASE_URL: postgresql://p02_ci_dev:disposable-runner-application@127.0.0.1:5432/gestion_solicitudes_aprobaciones
@@ -37,9 +38,14 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '24.22.2'
           cache: npm
-      - run: npm ci
+      - name: Comprobar herramientas fijadas
+        run: |
+          node --version
+          test "$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).packageManager')" = "npm@$NPM_VERSION"
+          npx --yes --package="npm@$NPM_VERSION" npm --version
+      - run: npx --yes --package="npm@$NPM_VERSION" npm ci
       - name: Esperar PostgreSQL del runner
         run: |
           for attempt in {1..30}; do
@@ -50,10 +56,10 @@ jobs:
           done
           exit 1
       - run: node scripts/ci-database.mjs
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run db:check:test
-      - run: npm run db:migrate:test
-      - run: npm run db:migrate:test
-      - run: npm run test:integration
-      - run: npm run build
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run typecheck
+      - run: npx --yes --package="npm@$NPM_VERSION" npm test
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run db:check:test
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run db:migrate:test
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run db:migrate:test
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run test:integration
+      - run: npx --yes --package="npm@$NPM_VERSION" npm run build
