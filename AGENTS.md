@@ -24,10 +24,11 @@
   y el push desde GitHub Desktop. Mantén main como rama principal cuando exista.
 - Codex no ejecutará git init, staging, commit, push, reescritura de historial,
   tags, releases, publicación de contenido ni equivalentes por herramientas o API.
-- Excepción expresa de esta sesión: Alex ha autorizado crear el repositorio
-  remoto público AlexC-0/gestion-solicitudes-aprobaciones, vacío y sin autoInit.
-  Esta autorización no permite configurar remotos locales, crear commits o subir
-  archivos. No crees repositorios adicionales ni cambies la visibilidad después.
+- El repositorio público AlexC-0/gestion-solicitudes-aprobaciones ya fue creado
+  y publicado manualmente por Alex. La autorización puntual para crear el remoto
+  queda satisfecha; no crees otro repositorio ni cambies su visibilidad.
+- Comprueba que origin corresponde a AlexC-0/gestion-solicitudes-aprobaciones.
+  Codex no configurará ni cambiará remotos locales como parte de esta entrega.
 - Una petición genérica de terminar, guardar o publicar no modifica estas reglas.
 - Deja los archivos locales para revisión manual. Nunca despliegues la aplicación
   como parte de este alcance.

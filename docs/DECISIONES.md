@@ -65,10 +65,13 @@ La estructura no se genera salvo docs/ y los archivos documentales autorizados.
 
 Alex indicó crear una carpeta nueva en C:\Users\kaosk\source\repos con el
 nombre del proyecto y autorizó después crear un repositorio GitHub nuevo y público:
-AlexC-0/gestion-solicitudes-aprobaciones. Se permite crear exclusivamente el remoto
-vacío, sin README automático, licencia ni .gitignore remotos. El resultado real
-se registrará en [STATUS](STATUS.md).
+AlexC-0/gestion-solicitudes-aprobaciones. El intento de creación por Codex falló
+por autenticación. Alex creó después el repositorio local y publicó manualmente
+la documentación inicial desde GitHub Desktop. El commit `c79177f` y la visibilidad
+pública se verificaron en GitHub; las evidencias se registran en [STATUS](STATUS.md).
+La autorización puntual de creación queda satisfecha; no se creará otro remoto.
 
-No se autoriza a Codex a inicializar Git local, configurar origin, hacer staging,
-commits o push. Alex realizará esas operaciones desde GitHub Desktop. No se cambia
-ningún remoto o archivo del Proyecto 01 ni se despliega la aplicación.
+Codex no inicializó Git local, configuró origin, hizo staging, commits ni push.
+Estas operaciones siguen reservadas a Alex desde GitHub Desktop. Esta actualización
+documental queda local para su revisión y publicación manual. No se cambia ningún
+remoto o archivo del Proyecto 01 ni se despliega la aplicación.

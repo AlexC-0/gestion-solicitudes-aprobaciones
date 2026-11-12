@@ -19,13 +19,26 @@ configuración de bases ni workflows en este proyecto.
 - No se encontraron AGENTS.md ni marcadores .git en las carpetas antecesoras;
   git rev-parse --show-toplevel en la carpeta padre confirmó que no es repositorio.
   El Proyecto 02 es hermano del Proyecto 01, no está dentro de él.
-- No se inicializa Git local: todavía no hay rama, staging, commits ni origin local.
-- Alex autorizó crear un remoto público vacío AlexC-0/gestion-solicitudes-aprobaciones.
-  Creación remota intentada, bloqueada por falta de autenticación; no se creó el repositorio.
-- Inicialización local, asociación del remoto, commit y push: pendientes de Alex
-  desde GitHub Desktop. No hay despliegue.
+- Alex inicializó el repositorio local y publicó la documentación desde GitHub
+  Desktop. El intento anterior de creación por Codex falló por autenticación;
+  ese bloqueo ya no impide disponer del repositorio.
+- Repositorio público verificado:
+  [AlexC-0/gestion-solicitudes-aprobaciones](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones).
+  Rama local y rama predeterminada remota: main. Origin apunta a
+  https://github.com/AlexC-0/gestion-solicitudes-aprobaciones.git.
+- HEAD y la referencia local origin/main coinciden en
+  [c79177f0540c05737abd8c56024165e466d65db3](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/commit/c79177f0540c05737abd8c56024165e466d65db3),
+  mensaje `Initial commit`. La existencia y el contenido de ese commit también
+  se comprobaron mediante la conexión GitHub.
+- El árbol estaba limpio al iniciar esta actualización. El commit publicado
+  contiene los seis archivos preparados y .gitattributes; se conserva este último.
+- Esta actualización documental sigue local, pendiente de revisión, commit y push
+  manuales de Alex desde GitHub Desktop. No hay despliegue.
 
-## Herramientas verificadas
+## Herramientas verificadas en la preparación inicial
+
+Resultados históricos de esta conversación. Las versiones y la disponibilidad de
+PostgreSQL no se han vuelto a comprobar para esta actualización documental.
 
 | Comprobación ejecutada | Resultado |
 | --- | --- |
@@ -47,7 +60,7 @@ No se consultaron credenciales ni se crearon bases. El Proyecto 02 aún no dispo
 de configuración o bases propias. Estas observaciones no acreditan conectividad
 SQL autenticada ni disponibilidad de una base para el nuevo proyecto.
 
-## Comprobaciones de esta entrega
+## Comprobaciones de la preparación inicial
 
 Revisión documental de coherencia: roles excluyentes, visibilidad, transiciones,
 validaciones, seguridad, exclusiones y criterios de aceptación contrastados con
@@ -59,37 +72,48 @@ coincidencias. Revisión manual de .gitignore: dependencias, builds, resultados,
 variables y secretos excluidos; ejemplos .env sin secretos y futuro lockfile
 conservados. Estas comprobaciones no constituyen una auditoría de seguridad.
 
-El Proyecto 02 no tiene Git, por lo que no existe diff de trabajo contra un commit;
-se revisaron íntegramente los seis archivos nuevos. Se volvió a comprobar el
-Proyecto 01: git status --short --branch limpio y git diff --check sin incidencias.
+En aquella preparación el Proyecto 02 todavía no tenía Git, por lo que no existía
+diff de trabajo contra un commit; se revisaron los seis archivos nuevos.
+Se volvió a comprobar el Proyecto 01: git status --short --branch limpio y git diff --check sin incidencias.
 No se modificó ningún archivo de ese proyecto.
 
 No se ejecutan pruebas automatizadas, typecheck, build ni instalación: no proceden
 para esta entrega documental y todavía no existen scripts del Proyecto 02.
 No hay CI propia; no se trasladan resultados del Proyecto 01 a este proyecto.
 
+## Actualización tras la publicación manual
+
+Alex confirmó la publicación y autorizó actualizar la documentación. Se inspeccionó
+la carpeta del Proyecto 02, las instrucciones, el estado Git, la rama, origin y
+las referencias locales. Se consultaron en GitHub la visibilidad pública, la rama
+predeterminada y el commit inicial; no se ejecutó fetch ni se modificaron referencias.
+
+Cambios limitados a README.md, AGENTS.md, DECISIONES.md y STATUS.md: registrar la
+publicación, dar por satisfecha la autorización puntual de creación y conservar
+como históricos los bloqueos del intento de Codex. La aplicación sigue sin
+implementar; alcance funcional, dependencias e infraestructura no cambian.
+
+Revisión ejecutada: git diff --check correcto, diff de los cuatro documentos
+revisado, nueve enlaces locales válidos y bloques Markdown cerrados. Búsqueda de
+patrones de tokens, claves privadas y URLs con credenciales sin coincidencias.
+Las referencias públicas al repositorio y al commit se contrastaron con GitHub.
+El índice sigue vacío de cambios; no se hizo staging, commit ni push.
+No procede ejecutar pruebas automatizadas, typecheck o build para estos cambios
+documentales. No se atribuye ninguna ejecución de CI a este commit o a la entrega.
+
 ## Bloqueos, límites y siguiente paso
 
-El destino ya está confirmado y la documentación está preparada. La creación del
-remoto público sigue pendiente por un bloqueo de autenticación:
+La creación y publicación inicial están resueltas por la intervención manual de
+Alex. No es necesario reparar la autenticación de ECC ni la conexión de Playwright
+para registrar este cierre documental. No se han solicitado ni guardado tokens.
 
-- La conexión GitHub reconoce la cuenta AlexC-0, pero no ofrece crear repositorios.
-- La herramienta create_repository del conector GitHub de ECC se invocó con
-  private=false y autoInit=false; devolvió Authentication Failed: Requires authentication.
-- GitHub CLI no está disponible en PATH. No se instaló.
-- El intento de abrir github.com/new con Playwright terminó en Extension connection
-  timeout, indicando falta de conexión con Playwright MCP Bridge. No se instaló
-  ninguna extensión ni se llegó a crear el repositorio mediante navegador.
+La selección de paquetes y el entorno de bases siguen pendientes antes de sus
+futuras implementaciones. No se ha demostrado una incompatibilidad técnica ni
+probado toda la combinación. Las comprobaciones antiguas de PostgreSQL no acreditan
+que exista una base configurada para este proyecto.
 
-Para completar esa parte será necesario autenticar el conector GitHub de ECC o
-crear manualmente el remoto público vacío. No se solicitaron ni guardaron tokens.
-La autorización existente para crear ese remoto continúa vigente; no permite
-commits o push automáticos. La selección de paquetes y el
-entorno de bases requieren concreción antes de sus futuras implementaciones;
-no se ha demostrado una incompatibilidad técnica ni probado toda la combinación.
-
-Tras revisar esta entrega y gestionar Git manualmente, el siguiente paso recomendado
-es la estructura ejecutable y configuración inicial de web/api, con versiones,
-workspaces, lockfile y controles reales. Requiere un encargo posterior: no se
-comienza en esta sesión. Véanse [decisiones pendientes](DECISIONES.md) y
-[criterios de aceptación](PROJECT_BRIEF.md).
+El siguiente paso inmediato es revisar y publicar manualmente esta actualización
+documental desde GitHub Desktop. Después se recomienda la estructura ejecutable y
+configuración inicial de web/api, con versiones, workspaces, lockfile y controles
+reales, mediante un encargo posterior; no se comienza en esta sesión. Véanse
+[decisiones pendientes](DECISIONES.md) y [criterios de aceptación](PROJECT_BRIEF.md).

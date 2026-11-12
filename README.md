@@ -45,6 +45,9 @@ docs/                 Documentación
 - [Estado y comprobaciones reales](docs/STATUS.md).
 - [Reglas de trabajo](AGENTS.md).
 
-Alex gestiona la inicialización local, los commits y el push desde GitHub Desktop.
-La creación del remoto vacío está autorizada expresamente para esta sesión;
-no implica subir contenido ni desplegar la aplicación.
+Alex creó y publicó el repositorio público
+[AlexC-0/gestion-solicitudes-aprobaciones](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones)
+desde GitHub Desktop. La documentación inicial está publicada en el commit
+`c79177f` (`Initial commit`); esta actualización documental queda pendiente de
+commit y push manuales. Las evidencias se registran en [STATUS](docs/STATUS.md).
+Todos los commits y push siguen siendo exclusivos de Alex. No hay despliegue.
