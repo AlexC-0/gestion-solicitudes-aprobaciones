@@ -73,3 +73,7 @@ nav { flex-wrap: wrap; }
 .badge { display: inline-block; font-size: .8rem; margin-left: .75rem; background: #eef2ec; padding: .1rem .6rem; border-radius: 4px; }
 .action-link { display: inline-block; padding: .45rem 0; font-weight: 650; }
 .history { padding-left: 1.3rem; }
+.state-filter { display: grid; gap: .4rem; max-width: 22rem; margin: 1rem 0; }
+.cancel-confirmation { border: 1px solid #a85c28; border-radius: 5px; padding: 1rem; margin-top: 1rem; background: #fff8ed; }
+.cancel-confirmation h3 { margin-top: 0; }
+.request-actions { margin: 1.5rem 0; }

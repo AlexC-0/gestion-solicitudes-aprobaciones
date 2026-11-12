@@ -13,20 +13,18 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 05, borradores propios
+## Alcance vigente: fase 06, envío, cancelación y bandeja de consulta
 
-El encargo actual autoriza catálogo, creación, listado paginado, detalle/historial
-y edición de borradores propios con permisos en Backend y pantallas React.
-Lee docs/SOLICITUDES.md y docs/AUTENTICACION.md antes de cambiar estos controles.
-La fase 04 está publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con CI
-43202926347 SUCCESS y 64 pruebas, según evidencia de Alex. Ese resultado no
-acredita los cambios nuevos. La CI de fase 05 requiere publicación manual propia.
-Conserva migraciones publicadas, datos y credenciales. Usa status/start/stop sobre
-la instancia existente; no prepare, reset ni reinicialización en esta fase.
-Creación y evento atómicos; edición con bloqueo y comprobación de autor/estado
-en la misma transacción. Listado/detalle comparten el ámbito definitivo del brief.
-No añadas envío, asignación, cancelación, aprobación, rechazo ni bandeja de revisor.
-No añadas migraciones sin necesidad concreta ni continúes automáticamente al siguiente hito.
+El encargo actual autoriza envío de borradores propios, asignación por tipo en
+Backend, cancelación por autor en borrador/pendiente, filtro de estado y bandeja
+de consulta para revisores. Lee SOLICITUDES y AUTENTICACION antes de modificar.
+Fase 05 publicada en 7571f83952103dce1f54a3a94755a661b21fb749, CI 43207099040
+SUCCESS y 88 pruebas según Alex; no atribuyas esa evidencia a los cambios nuevos.
+Conserva datos, credenciales y migraciones. Usa únicamente status/start/stop de
+la instancia existente; no prepare/reset/initdb ni regeneración de credenciales.
+Transiciones/eventos atómicos con bloqueo, fechas posteriores al bloqueo y
+detalle/historial de una misma instantánea. Concurrencia probada con espera real.
+No implementes aprobación, rechazo, administración ni acciones posteriores.
 
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
@@ -59,7 +57,7 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   contraseñas, roles o asignaciones existentes. No muestres credenciales.
 - CI: PostgreSQL 18 efímero del runner con roles propios, readiness, migraciones,
   integración y controles existentes; no necesita Docker local ni credenciales locales.
-- No implementes acciones de solicitudes fuera de los borradores, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
+- No implementes aprobación, rechazo, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
 - No instales herramientas globales ni cambies Node.js o servicios del sistema.
   No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
 - Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
@@ -127,4 +125,4 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   sin NUL/surrogates aislados ni HTML; conserva el contrato SOLICITUDES.
 - Sin reintentos automáticos de escritura. Un fallo de red tras POST puede dejar
   un borrador guardado: ofrece comprobar el listado antes de repetir.
-- No avances a envío/resolución/cancelación sin un nuevo encargo.
+- No avances a aprobación/rechazo sin un nuevo encargo.

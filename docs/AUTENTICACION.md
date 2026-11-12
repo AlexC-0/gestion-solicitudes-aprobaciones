@@ -134,3 +134,11 @@ Las respuestas tardías tampoco pueden guardar token, navegar ni confirmar en ot
 cuenta. Un 401 leyendo datos u obteniendo CSRF para guardarlos invalida la sesión.
 Los formularios son memoria del componente, desmontada al cambiar generación.
 Sin almacenamiento web ni reintentos automáticos.
+## Ampliación de fase 06
+
+Enviar/cancelar pasan por el mismo router privado y protectWrite. Conservan
+caducidad absoluta, no-store, CSRF/origen y errores seguros; no modifican identidad
+ni renuevan sesión. No se cambian configuración, secreto, cookies o store.
+Filtro de estado forma parte de las claves privadas; la confirmación y respuesta
+de una acción se eliminan al cambiar generación. Un resultado tardío no actualiza
+la nueva cuenta. No se añaden reintentos ni almacenamiento web.

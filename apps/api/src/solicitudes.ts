@@ -18,7 +18,8 @@ const editing = z.strictObject({ titulo: fields.titulo.optional(), tipo_codigo: 
   .refine(v => Object.keys(v).length > 0);
 const integer = (max: number, fallback: string) => z.string().regex(/^[1-9][0-9]*$/).default(fallback)
   .transform(Number).refine(n => Number.isSafeInteger(n) && n <= max);
-const pagination = z.strictObject({ pagina: integer(1000000, '1'), tamano: integer(100, '20') });
+const states = z.enum(['borrador', 'pendiente', 'aprobada', 'rechazada', 'cancelada']);
+const pagination = z.strictObject({ pagina: integer(1000000, '1'), tamano: integer(100, '20'), estado: states.optional() });
 const noQuery = z.strictObject({});
 const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 // El mismo ámbito en lista y detalle conserva la visibilidad definitiva del brief.
@@ -58,14 +59,14 @@ export function createSolicitudes(pool: pg.Pool, auth: Awaited<ReturnType<typeof
     res.location('/api/solicitudes/' + solicitud.id).status(201).json({ solicitud });
   });
   router.get('/solicitudes', async (req, res) => {
-    const { pagina, tamano } = parse(pagination, req.query, 'Usa pagina entre 1 y 1000000 y tamano entre 1 y 100, sin otros parámetros.');
+    const { pagina, tamano, estado } = parse(pagination, req.query, 'Usa pagina entre 1 y 1000000 y tamano entre 1 y 100; estado debe ser uno de los estados definidos, sin otros parámetros.');
     const user = res.locals.user as PublicUser;
     const result = await pool.query(
-      `WITH visibles AS (SELECT * FROM solicitudes WHERE ${visible})
+      `WITH visibles AS (SELECT * FROM solicitudes WHERE ${visible} AND ($5::text IS NULL OR estado=$5))
        SELECT (SELECT count(*)::int FROM visibles) AS total,
          COALESCE((SELECT json_agg(p ORDER BY p.creada_en DESC,p.id DESC) FROM
            (SELECT * FROM visibles ORDER BY creada_en DESC,id DESC LIMIT $3 OFFSET $4) p),'[]'::json) AS solicitudes`,
-      [user.id, user.rol, tamano, (pagina - 1) * tamano]);
+      [user.id, user.rol, tamano, (pagina - 1) * tamano, estado ?? null]);
     const row = result.rows[0] as { total: number; solicitudes: unknown[] };
     res.json({ solicitudes: row.solicitudes, paginacion: { pagina, tamano, total: row.total, paginas: Math.ceil(row.total / tamano) } });
   });
@@ -73,12 +74,15 @@ export function createSolicitudes(pool: pg.Pool, auth: Awaited<ReturnType<typeof
     parse(noQuery, req.query, 'El detalle no admite parámetros.');
     const id = parse(uuid, req.params.id, 'El identificador de solicitud no es válido.');
     const user = res.locals.user as PublicUser;
-    const result = await pool.query(`SELECT * FROM solicitudes WHERE ${visible} AND id=$3`, [user.id, user.rol, id]);
+    const result = await pool.query(
+      `SELECT to_jsonb(s) || jsonb_build_object('autor_nombre',a.nombre,'responsable_nombre',r.nombre) AS solicitud,
+        COALESCE((SELECT jsonb_agg(to_jsonb(e) || jsonb_build_object('id',e.id::text,'actor_nombre',u.nombre) ORDER BY e.id)
+          FROM eventos_solicitud e JOIN usuarios u ON u.id=e.actor_id WHERE e.solicitud_id=s.id),'[]'::jsonb) AS historial
+       FROM solicitudes s JOIN usuarios a ON a.id=s.autor_id
+       LEFT JOIN usuarios r ON r.id=s.responsable_id
+       WHERE ${visible} AND s.id=$3`, [user.id, user.rol, id]);
     if (!result.rowCount) throw missing();
-    const history = await pool.query(
-      `SELECT e.* FROM eventos_solicitud e JOIN solicitudes s ON s.id=e.solicitud_id
-       WHERE ${visible} AND s.id=$3 ORDER BY e.id`, [user.id, user.rol, id]);
-    res.json({ solicitud: result.rows[0], historial: history.rows });
+    res.json(result.rows[0]);
   });
   router.patch('/solicitudes/:id', auth.protectWrite, async (req, res) => {
     parse(noQuery, req.query, 'La edición no admite parámetros.');
@@ -97,6 +101,48 @@ export function createSolicitudes(pool: pg.Pool, auth: Awaited<ReturnType<typeof
     });
     res.json({ solicitud });
   });
+  for (const action of ['enviar', 'cancelar'] as const) {
+    router.post('/solicitudes/:id/' + action, auth.protectWrite, async (req, res) => {
+      parse(noQuery, req.query, 'La acción no admite parámetros.');
+      const hasBody = (req.get('Content-Length') !== undefined && req.get('Content-Length') !== '0') || req.get('Transfer-Encoding') !== undefined;
+      parse(noQuery, req.body ?? (hasBody ? null : {}), 'La acción solo admite un objeto JSON vacío o ningún cuerpo.');
+      const id = parse(uuid, req.params.id, 'El identificador de solicitud no es válido.');
+      const user = res.locals.user as PublicUser;
+      const solicitud = await transaction(pool, async client => {
+        const locked = await client.query("SELECT * FROM solicitudes WHERE id=$1 AND autor_id=$2 AND $3='solicitante' FOR UPDATE", [id, user.id, user.rol]);
+        if (!locked.rowCount) throw missing();
+        const row = locked.rows[0] as { estado: string; titulo: string; tipo_codigo: string; descripcion: string };
+        const allowed = action === 'enviar' ? row.estado === 'borrador' : ['borrador', 'pendiente'].includes(row.estado);
+        if (!allowed) throw new AuthError(409, 'INVALID_STATE', 'El estado ha cambiado o no permite esta acción. Actualiza el detalle.');
+        let updated: pg.QueryResult;
+        if (action === 'enviar') {
+          parse(creation, { titulo: row.titulo, tipo_codigo: row.tipo_codigo, descripcion: row.descripcion }, bodyMessage);
+          if (row.titulo !== row.titulo.trim() || Array.from(row.descripcion).length < 10) {
+            throw invalid('Para enviar, revisa el título y completa una descripción de 10 a 3000 caracteres de texto plano.');
+          }
+          const assignment = await client.query(
+            'SELECT u.id,u.rol FROM tipos_solicitud t JOIN usuarios u ON u.id=t.revisor_id WHERE t.codigo=$1 FOR SHARE OF t,u', [row.tipo_codigo]);
+          const reviewer = assignment.rows[0] as { id: string; rol: string } | undefined;
+          if (!reviewer || reviewer.rol !== 'revisor') throw new AuthError(409, 'ASSIGNMENT_UNAVAILABLE', 'El tipo no tiene un revisor válido configurado. No se ha enviado la solicitud.');
+          updated = await client.query(
+            `WITH momento AS MATERIALIZED (SELECT clock_timestamp() AS fecha)
+             UPDATE solicitudes s SET estado='pendiente',responsable_id=$2,enviada_en=m.fecha,actualizada_en=m.fecha
+             FROM momento m WHERE s.id=$1 RETURNING s.*`, [id, reviewer.id]);
+        } else {
+          updated = await client.query(
+            `WITH momento AS MATERIALIZED (SELECT clock_timestamp() AS fecha)
+             UPDATE solicitudes s SET estado='cancelada',finalizada_en=m.fecha,actualizada_en=m.fecha
+             FROM momento m WHERE s.id=$1 RETURNING s.*`, [id]);
+        }
+        await client.query(
+          `INSERT INTO eventos_solicitud (solicitud_id,actor_id,accion,estado_anterior,estado_posterior,creada_en)
+           SELECT id,$2,$3,$4,estado,actualizada_en FROM solicitudes WHERE id=$1`,
+          [id, user.id, action === 'enviar' ? 'envio' : 'cancelacion', row.estado]);
+        return updated.rows[0] as unknown;
+      });
+      res.json({ solicitud });
+    });
+  }
   router.use(auth.handleError);
   return router;
 }

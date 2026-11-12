@@ -60,7 +60,7 @@ export function Account(){
       <dl><dt>Rol</dt><dd>{state.identity.user.rol==='solicitante'?'Solicitante':'Revisor'}</dd>
         <dt>Correo</dt><dd>{state.identity.user.correo}</dd></dl>
       <p>Sesión válida hasta <time dateTime={state.identity.expiresAt}>{new Date(state.identity.expiresAt).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</time>.</p>
-      <p>{state.identity.user.rol==='solicitante'&&<Link to="/solicitudes">Mis solicitudes</Link>}</p>
+      <p><Link to="/solicitudes">{state.identity.user.rol==="solicitante"?"Mis solicitudes":"Bandeja de revisión"}</Link></p>
       <button onClick={()=>{void client.logout();}}>Cerrar sesión</button>
     </>:<SessionStatus />}
     <p><Link to="/">Estado técnico</Link></p>

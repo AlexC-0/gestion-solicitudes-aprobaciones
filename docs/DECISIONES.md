@@ -288,3 +288,28 @@ no atribuida a esta fase.
 Los avisos moderados/allowScripts ya documentados se conservan. No se amplían
 dependencias ni infraestructura. Sin envío, asignación, cancelación, resolución,
 administración ni despliegue. Resultados locales y límites reales en STATUS.
+## Fase 06 — envío, cancelación y consulta del revisor
+
+Nuevo encargo explícito: contrato ampliado en SOLICITUDES antes del código.
+Fase 05 cerrada en 7571f83 / CI 43207099040 SUCCESS (88 pruebas), según Alex.
+Ese resultado es histórico; la fase 06 exige publicación manual y CI propias.
+
+- Acciones POST explícitas con {} o sin cuerpo. Sin query/campos controlados
+  por el cliente. Autoría/rol y estado se comprueban con bloqueo en la transacción.
+  El revisor recibe 404 al intentar una acción, incluso sobre una enviada que lee,
+  conservando el ámbito de acciones del autor y la ausencia de filtraciones.
+- Envío valida el contenido guardado, exige descripción de 10–3000 puntos de
+  código y resuelve el revisor del tipo guardado. FOR SHARE protege configuración
+  y rol mientras se confirma. Configuración inválida: 409 sin cambios.
+- Cancelar borrador no asigna responsable; cancelar pendiente conserva envío y
+  responsable. Terminales/repeticiones: 409, sin nuevo evento.
+- Una fecha SQL generada tras el bloqueo se usa para transición y evento,
+  conservando microsegundos y coherencia después de esperas. No se usan fechas
+  del cliente ni now de inicio de transacción para las nuevas transiciones.
+- Detalle, nombres mínimos e historial se obtienen en una sentencia MVCC.
+  Filtro de estado y total comparten ámbito; no hay API paralela del revisor.
+- Bandeja inicialmente pendiente, filtros con reinicio de página, historial con
+  nombres, confirmación de cancelación y recuperación explícita ante conflicto/red.
+  Mismos controles de sesión, cancelación y descarte de respuestas antiguas.
+- Sin cambios de migraciones, dependencias o infraestructura. Sin aprobación,
+  rechazo, administración ni despliegue. Resultados reales en STATUS.

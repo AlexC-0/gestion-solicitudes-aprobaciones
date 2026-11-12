@@ -70,7 +70,7 @@ export function App() {
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <p className="scope-note">Borradores propios disponibles. El envío y la resolución se incorporarán en próximas fases.</p>
+          <p className="scope-note">Creación, envío y cancelación disponibles. Los revisores pueden consultar sus solicitudes asignadas.</p>
         </main>
         <footer>CHAMBA DIARIA · Aprender construyendo</footer>
       </div>

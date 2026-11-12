@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { SolicitudActions } from './SolicitudActions';
 import { SessionStatus, useAuth } from './Auth';
 
 interface Solicitud {
   id:string; titulo:string; tipo_codigo:string; descripcion:string; estado:string;
-  creada_en:string; actualizada_en:string;
+  creada_en:string; actualizada_en:string; autor_nombre?:string; responsable_nombre?:string|null; enviada_en?:string|null; finalizada_en?:string|null;
 }
-interface Evento { id:string; accion:string; creada_en:string; actor_id:string; estado_posterior:string }
+interface Evento { id:string; accion:string; creada_en:string; actor_id:string; actor_nombre?:string; estado_anterior?:string|null; estado_posterior:string }
 interface Detail { solicitud:Solicitud; historial:Evento[] }
 interface Tipo { codigo:string; nombre:string }
 interface List { solicitudes:Solicitud[]; paginacion:{pagina:number;tamano:number;total:number;paginas:number} }
@@ -27,9 +28,9 @@ export function RequestsArea(){
   const {state,client}=useAuth();
   if(state.status==='anonymous')return <Navigate to="/acceso" replace/>;
   if(state.status!=='authenticated')return <section className="connection"><SessionStatus/></section>;
-  if(state.identity.user.rol!=='solicitante')return <section className="connection"><h2>Borradores de solicitantes</h2><p>Esta sección está disponible para cuentas de solicitante.</p><Link to="/cuenta">Volver a mi cuenta</Link></section>;
+
   return <section className="connection requests-panel" key={state.identity.user.id+':'+client.getSessionKey()}>
-    <nav aria-label="Solicitudes"><Link to="/solicitudes">Mis solicitudes</Link><Link to="/cuenta">Mi cuenta</Link></nav>
+    <nav aria-label="Solicitudes"><Link to="/solicitudes">{state.identity.user.rol==="revisor"?"Bandeja de revisión":"Mis solicitudes"}</Link><Link to="/cuenta">Mi cuenta</Link></nav>
     <Outlet/>
   </section>;
 }
@@ -37,9 +38,20 @@ export function RequestsList(){
   const {client,user,epoch}=usePrivate();
   const [params,setParams]=useSearchParams();
   const page=params.get('pagina')??'1';
-  const query=useQuery({queryKey:['private',user.id,epoch,'solicitudes',page],
-    queryFn:({signal})=>client.request<List>('solicitudes?pagina='+encodeURIComponent(page),signal)});
-  return <><h2>Mis solicitudes</h2><p><Link className="action-link" to="/solicitudes/nueva">Nuevo borrador</Link></p>
+  const filter=params.get('estado')??(user.rol==='revisor'?'pendiente':'todos');
+  const move=(pagina:string,estado=filter)=>setParams({pagina,estado});
+  const filterQuery=filter==='todos'?'':'&estado='+encodeURIComponent(filter);
+  const query=useQuery({queryKey:['private',user.id,epoch,'solicitudes',page,filter],
+    queryFn:({signal})=>client.request<List>('solicitudes?pagina='+encodeURIComponent(page)+filterQuery,signal)});
+  return <><h2>{user.rol==='revisor'?'Bandeja de revisión':'Mis solicitudes'}</h2>
+    {user.rol==='solicitante'&&<p><Link className="action-link" to="/solicitudes/nueva">Nuevo borrador</Link></p>}
+    <div className="state-filter"><label htmlFor="estado">Filtrar por estado</label>
+      <select id="estado" value={filter} onChange={e=>move('1',e.target.value)}>
+        <option value="todos">Todos los estados</option>
+        <option value="borrador">Borrador</option><option value="pendiente">Pendiente</option>
+        <option value="aprobada">Aprobada</option><option value="rechazada">Rechazada</option><option value="cancelada">Cancelada</option>
+      </select>
+    </div>
     {query.isPending?<p role="status">Cargando solicitudes…</p>:query.isError?<ErrorMessage error={query.error} retry={()=>{void query.refetch();}}/>:<>
       <p>{query.data.paginacion.total} solicitudes</p>
       {query.data.solicitudes.length===0?<p>No hay solicitudes en esta página.</p>:<ul className="request-list">
@@ -47,9 +59,9 @@ export function RequestsList(){
           <p>{s.tipo_codigo} · Creada el {date(s.creada_en)}</p></li>)}
       </ul>}
       <nav className="pagination" aria-label="Paginación">
-        <button disabled={query.data.paginacion.pagina<=1} onClick={()=>setParams({pagina:String(query.data.paginacion.pagina-1)})}>Anterior</button>
+        <button disabled={query.data.paginacion.pagina<=1} onClick={()=>move(String(query.data.paginacion.pagina-1))}>Anterior</button>
         <span>Página {query.data.paginacion.pagina} de {Math.max(1,query.data.paginacion.paginas)}</span>
-        <button disabled={query.data.paginacion.pagina>=query.data.paginacion.paginas} onClick={()=>setParams({pagina:String(query.data.paginacion.pagina+1)})}>Siguiente</button>
+        <button disabled={query.data.paginacion.pagina>=query.data.paginacion.paginas} onClick={()=>move(String(query.data.paginacion.pagina+1))}>Siguiente</button>
       </nav>
     </>}</>;
 }
@@ -70,14 +82,21 @@ export function RequestDetail(){
   const s=query.data.solicitud;
   const saved=location.state as {saved?:{userId:string;epoch:number}}|null;
   return <><h2 tabIndex={-1} ref={heading}>{s.titulo}</h2>
-    {saved?.saved?.userId===user.id&&saved.saved.epoch===epoch&&<p className="success" role="status">Borrador guardado.</p>}
-    <dl><dt>Estado</dt><dd>{s.estado}</dd><dt>Tipo</dt><dd>{s.tipo_codigo}</dd>
+    {s.estado==='borrador'&&saved?.saved?.userId===user.id&&saved.saved.epoch===epoch&&<p className="success" role="status">Borrador guardado.</p>}
+    <dl><dt>Autor</dt><dd>{s.autor_nombre??user.nombre}</dd>
+      <dt>Responsable</dt><dd>{s.responsable_nombre??'Sin asignar'}</dd>
+      <dt>Estado</dt><dd>{s.estado}</dd><dt>Tipo</dt><dd>{s.tipo_codigo}</dd>
       <dt>Descripción</dt><dd className="plain-text">{s.descripcion||'Sin descripción.'}</dd>
+      {s.enviada_en&&<><dt>Enviada</dt><dd>{date(s.enviada_en)}</dd></>}
+      {s.finalizada_en&&<><dt>Finalizada</dt><dd>{date(s.finalizada_en)}</dd></>}
       <dt>Creada</dt><dd>{date(s.creada_en)}</dd><dt>Última modificación</dt><dd>{date(s.actualizada_en)}</dd></dl>
-    {s.estado==='borrador'&&<p><Link className="action-link" to={'/solicitudes/'+s.id+'/editar'}>Editar borrador</Link></p>}
+    {user.rol==='solicitante'&&s.estado==='borrador'&&<p><Link className="action-link" to={'/solicitudes/'+s.id+'/editar'}>Editar borrador</Link></p>}
+    {user.rol==='solicitante'&&<SolicitudActions key={s.id} id={s.id} estado={s.estado} reload={async()=>{
+      const result=await query.refetch();if(result.isError)throw result.error;
+    }}/>}
     <h3>Historial</h3><ol className="history">{query.data.historial.map(e=><li key={e.id}>
-      <strong>{e.accion==='creacion'?'Creación del borrador':e.accion}</strong> · {date(e.creada_en)}
-      <p>Actor: {e.actor_id===user.id?'Tú':e.actor_id} · Estado: {e.estado_posterior}</p>
+      <strong>{e.accion==='creacion'?'Creación del borrador':e.accion==='envio'?'Envío de la solicitud':e.accion==='cancelacion'?'Cancelación de la solicitud':e.accion}</strong> · {date(e.creada_en)}
+      <p>Actor: {e.actor_id===user.id?'Tú':e.actor_nombre??'Usuario'} · {e.estado_anterior?e.estado_anterior+" → ":"Estado: "}{e.estado_posterior}</p>
     </li>)}</ol></>;
 }
 export function EditRequest(){
@@ -89,6 +108,11 @@ export function EditRequest(){
 }
 const validPlain=(v:string)=>!/[\uD800-\uDFFF]/u.test(v)&&!v.includes('\0')&&!/<\/?[a-z][^>]*>/iu.test(v);
 export function DraftForm({initial}:{initial?:Solicitud}){
+  const {user}=usePrivate();
+  if(user.rol!=='solicitante')return <p role="alert">Solo un solicitante puede crear o editar borradores.</p>;
+  return <DraftEditor {...(initial?{initial}:{})}/>;
+}
+function DraftEditor({initial}:{initial?:Solicitud}){
   const {client,user,epoch}=usePrivate();
   const queries=useQueryClient();
   const navigate=useNavigate();

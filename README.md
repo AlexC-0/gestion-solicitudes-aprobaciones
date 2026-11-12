@@ -11,7 +11,9 @@ También existe una vista de página no encontrada.
 
 Hay esquema PostgreSQL, migraciones, pool/transacciones y seed ficticio con roles.
 Hay acceso real, sesiones PostgreSQL, CSRF y cierre de sesión. La autorización
-por rol y autor permite crear, listar, consultar y editar borradores propios.
+por rol y autor permite crear, listar, consultar y editar borradores propios,
+enviarlos con asignación automática y cancelarlos. Los revisores consultan únicamente
+las solicitudes enviadas que tienen asignadas, también tras su cancelación.
 GET /api/health solo acredita que el proceso HTTP responde: no comprueba PostgreSQL
 ni la disponibilidad completa del sistema. No hay despliegue.
 
@@ -146,10 +148,12 @@ instalación, bootstrap, tipos, migraciones, 15 pruebas existentes, 16 de integr
 La fase 04 quedó publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con
 [CI 43202926347 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43202926347),
 según Alex: instalación, tipos, migraciones, build y 64 pruebas.
-La fase 05 queda local, sin staging/commit/push; su CI está pendiente de publicación.
+La fase 05 quedó publicada en 7571f83952103dce1f54a3a94755a661b21fb749, con
+[CI 43207099040 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43207099040)
+y 88 pruebas según Alex. La fase 06 queda local; su CI está pendiente de publicación manual.
 
 El proyecto tiene entorno PostgreSQL propio e independiente del Proyecto 01.
-Los borradores propios están implementados; envío y resolución siguen pendientes. No hay despliegue.
+Borradores, envío, cancelación y consulta del revisor están implementados; aprobación y rechazo siguen pendientes. No hay despliegue.
 
 ## Primera preparación de una copia nueva — Windows
 
@@ -265,7 +269,7 @@ Abre http://127.0.0.1:5173/acceso con una cuenta ficticia solicitante existente.
 Desde Mi cuenta → Mis solicitudes puedes crear un borrador, abrirlo, recargar y
 editar título, tipo y descripción. Tiene historial de creación; editar no genera
 transiciones. Los otros solicitantes y revisores no ven ni modifican ese borrador.
-El listado pagina de 20 en 20. Todavía no hay controles de envío ni resolución.
+El listado pagina de 20 en 20 y permite filtrar por estado. La fase 06 añade envío y cancelación; aprobación y rechazo siguen pendientes.
 
 Credenciales locales ya existentes en .local/seed-credentials.json, excluidas de Git.
 No las pegues en documentación ni consola. Los recorridos de verificación conservan
@@ -285,3 +289,34 @@ del guardado: comprueba Mis solicitudes antes de repetir, para evitar duplicados
 
 Contrato de API, Unicode, permisos y concurrencia: [SOLICITUDES](docs/SOLICITUDES.md).
 Resultados actuales y publicación pendiente: [STATUS](docs/STATUS.md).
+## Envío, cancelación y bandeja — fase 06
+
+En el entorno existente basta con status/start y dev (o start después de build);
+no hay dependencias ni migraciones nuevas. Usa siempre npm 11.19.1:
+
+~~~powershell
+npx --yes --package=npm@11.19.1 npm run db:local -- status
+npx --yes --package=npm@11.19.1 npm run db:local -- start
+npx --yes --package=npm@11.19.1 npm run dev
+~~~
+
+1. Accede en http://127.0.0.1:5173/acceso con Solicitante Uno, usando las
+   credenciales privadas existentes.
+2. Crea un borrador con descripción de 10–3000 caracteres y abre su detalle.
+   Enviar borrador valida el contenido guardado y asigna el responsable por tipo.
+3. Cierra sesión y entra con el revisor correspondiente: material/software se
+   asignan a Revisor Uno y formación a Revisor Dos en el seed original.
+   Mi cuenta → Bandeja de revisión empieza por pendientes; puedes cambiar el filtro.
+4. Vuelve a la cuenta del autor para Cancelar solicitud. La confirmación advierte
+   que no podrá reabrirse. Autor y revisor conservan expediente e historial tras
+   cancelar una enviada. Si se cancela un borrador, solo lo ve el autor.
+
+Tras un conflicto o una conexión interrumpida, Actualizar detalle permite comprobar
+el estado antes de repetir. No hay reintentos automáticos ni controles de aprobación
+o rechazo. La asignación no se cambia después del envío.
+
+Compilado: detén dev, ejecuta npx --yes --package=npm@11.19.1 npm run build y
+npx --yes --package=npm@11.19.1 npm start; abre http://127.0.0.1:3000/acceso.
+Al terminar, Ctrl+C y npx --yes --package=npm@11.19.1 npm run db:local -- stop.
+Datos conservados. Los recorridos de esta fase dejan dos solicitudes ficticias
+«Prueba fase 06 …», enviadas y después canceladas, con tres eventos cada una.

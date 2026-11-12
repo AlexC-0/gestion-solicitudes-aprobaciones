@@ -2,23 +2,23 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — fase 05, borradores propios verificados localmente
+## Estado actual — fase 06, envío, cancelación y consulta del revisor
 
-La fase 04 quedó publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con
-[CI 43202926347 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43202926347),
-según evidencia aportada por Alex: instalación, tipos, migraciones, build y 64
-pruebas (14 API, 15 frontend, 35 integración). Ese resultado acredita solo ese commit.
+La fase 05 quedó publicada en 7571f83952103dce1f54a3a94755a661b21fb749 con
+[CI 43207099040 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43207099040),
+según evidencia aportada por Alex: instalación, tipos, migraciones, build y
+88 pruebas (14 API, 27 frontend, 47 integración). Esa CI acredita solo ese commit.
 
-Fase 05: catálogo, creación/listado/detalle/edición de borradores propios con
-permisos en Backend, evento inicial atómico y pantallas React. Verificación local:
-88 pruebas (14 API, 27 frontend, 47 integración), tipos, build, HTTP y Chrome real
-en desarrollo y compilado. La CI de esta entrega está pendiente de revisión,
-staging, commit y push manuales de Alex desde GitHub Desktop.
+Fase 06 implementada localmente: envío de borrador con asignación automática,
+cancelación por autor, filtro de estado y bandeja de consulta para revisores.
+Transiciones/eventos atómicos y detalle/historial de una instantánea SQL.
+Verificación local: 115 pruebas (14 API, 38 frontend, 63 integración), tipos,
+build, HTTP y Chrome en desarrollo/compilado. Publicación manual y CI propias pendientes.
 
-Sin nuevas dependencias ni migraciones. Datos conservados y procesos propios
-cerrados. El contrato concreto está en [SOLICITUDES](SOLICITUDES.md).
-Los apartados anteriores se conservan como históricos; el cierre de fase 05
-y su manifiesto de archivos están al final.
+Datos y migraciones conservados; procesos temporales cerrados. No se implementan
+aprobación ni rechazo. Contrato vigente en [SOLICITUDES](SOLICITUDES.md).
+Los apartados anteriores se mantienen como históricos; evidencias de esta entrega
+y manifiesto de archivos al final.
 
 
 ## Preparación documental inicial — histórico
@@ -823,3 +823,170 @@ Conserva formularios al revalidar la misma sesión y descarta datos/respuestas d
 cuentas anteriores. Actualiza contrato y documentación de fase 05.
 Verificado con tipos, 88 pruebas, build, HTTP y Chrome en desarrollo y compilado.
 Sin nuevas dependencias ni migraciones; CI pendiente de esta publicación.
+
+
+## Fase 06 — envío, cancelación y bandeja (12/11/2026)
+
+### Origen y alcance
+
+Ruta/raíz Git C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones.
+main limpio al empezar, HEAD 7571f83952103dce1f54a3a94755a661b21fb749, origin
+AlexC-0/gestion-solicitudes-aprobaciones. Sin trabajo posterior que sobrescribir.
+Proyecto 01 no inspeccionado ni modificado. Lectura de AGENTS, README, brief,
+decisiones, estado, persistencia, autenticación y solicitudes antes de implementar.
+Contrato ampliado primero; AGENTS actualizado al nuevo encargo explícito.
+
+Cierre remoto de fase 05: CI 43207099040 SUCCESS y 88 pruebas, aportado por Alex.
+Esta entrega no se ha publicado ni tiene CI remota verificada. No se atribuye
+el resultado anterior a los cambios nuevos.
+
+### Implementación y decisiones
+
+- POST /api/solicitudes/:id/enviar y /cancelar, con {} o sin cuerpo; sin query ni
+  campos adicionales. Solo autor solicitante; ajeno/inexistente/revisor 404.
+  Sesión 401, CSRF/origen 403, entrada 400/413 y estados incompatibles/repetidos 409.
+- Envío bloquea la fila, valida contenido guardado y descripción 10–3000 puntos de
+  código; asigna según el tipo guardado. Configuración/revisor protegidos por
+  FOR SHARE; rol incorrecto devuelve 409 ASSIGNMENT_UNAVAILABLE y no modifica nada.
+- Cancelación desde borrador conserva responsable/envío null; desde pendiente
+  conserva responsable/envío. Registra finalización. Aprobada/rechazada/cancelada
+  no admiten cancelación, envío ni edición; no hay reapertura ni borrado.
+- Estado, metadatos y evento se confirman juntos. Fecha generada después del
+  bloqueo; evento copia la fecha SQL exacta. Fallo del evento revierte todo.
+- Lectura de expediente/historial/nombres mínimos en una sola sentencia MVCC.
+  Nombres del autor, responsable y actores solo dentro del expediente autorizado;
+  no se añaden directorio ni correos. El historial conserva orden y estados.
+- Listado con filtro estado validado y ámbito común a filas/total. Orden y
+  paginación anteriores conservados; filtro cambia a página 1 en React.
+- /solicitudes se adapta al rol. Bandeja del revisor inicialmente pendiente,
+  acceso al resto de asignadas mediante filtro, sin controles de escritura.
+  Autor puede enviar o cancelar según estado; confirmación explícita de cancelación.
+- Tras acción, se invalidan detalle/listados y se muestra confirmación específica.
+  409 o red permiten actualizar detalle antes de repetir. Sin reintentos automáticos.
+  Usuario/generación/filtro forman claves privadas; se descartan acciones tardías
+  y se elimina la confirmación al cambiar de cuenta.
+- Esquema, migraciones, dependencias, lockfile, CI, PROJECT_BRIEF, motor de
+  autenticación y auth-client conservados. No se usó prepare/reset/initdb/seed,
+  ni se regeneraron secretos. Sin aprobación/rechazo o infraestructura adicional.
+
+### Pruebas y comandos ejecutados
+
+Node v24.13.0; npm efectivo 11.19.1; PostgreSQL 18.6 en 127.0.0.1:55433.
+Todos los comandos npm se ejecutaron con el prefijo
+npx --yes --package=npm@11.19.1 npm.
+
+| Comando tras el prefijo | Resultado real |
+| --- | --- |
+| ci | Correcto, 294 paquetes; lockfile conservado |
+| run db:local -- status / start | Instancia existente detenida al inicio; arranque correcto |
+| run typecheck | API/frontend y pruebas correctos |
+| test | 14 API y 38 frontend correctas, sin omitidas |
+| run test:integration | 63 con PostgreSQL real correctas, sin omitidas |
+| run build | API TypeScript y frontend Vite correctos |
+| run dev | API 3000 y Vite 5173; proxy real correcto |
+| start | API/frontend compilados en 3000; mismo origen |
+| run db:local -- stop / status | Detenida al finalizar, datos conservados |
+
+115 pruebas: las 88 anteriores se conservan sin modificar sus archivos;
+16 nuevas de integración y 11 nuevas de frontend. Sin cifra artificial.
+
+Integración añade envío/validación/asignación, configuración inválida, cancelación
+antes/después de envío, dos solicitantes/dos revisores, terminales, filtros y
+paginación, cuerpos/UUID/query, sesión/CSRF/origen/caducidad, rollback de todos
+los metadatos y detalle coherente bajo transición concurrente.
+
+Concurrencia: una conexión retiene la fila y las dos peticiones se ponen en cola.
+El helper recorre pg_blocking_pids desde esa conexión hasta sus esperas indirectas
+antes de liberarla: no depende de sleeps ni cuenta bloqueos de otra procedencia.
+Verifica dos envíos, dos cancelaciones, edición/envío en ambos órdenes,
+envío/cancelación en ambos órdenes y lectura/transición solapadas. Histórico
+coherente y fechas posteriores a cambios confirmados. Sin escrituras parciales.
+
+Frontend añade flujo de envío, confirmación de cancelación por teclado, filtros/
+páginas, bandeja sin acciones, recuperación tras 409, incertidumbre de red,
+validación, terminales, error técnico y cambio de sesión durante confirmación/POST.
+La primera ejecución detectó pérdida de foco al cerrar con Escape: el botón aún
+estaba deshabilitado durante la llamada focus. Se corrigió esperando al render
+de cierre y la suite final pasó, sin debilitar la aserción.
+
+npm ci mantiene los tres avisos moderados conocidos y avisos allowScripts de
+argon2/esbuild. No se aplicó --force, actualización masiva ni omisión de scripts.
+No se han instalado herramientas globales ni modificado servicios del sistema.
+
+### Chrome y HTTP reales
+
+.local/workflow-browser-check.mjs pasó contra 5173 y 3000:
+creación por teclado (Tab/select/textarea/Enter), envío, asignación a Revisor Uno,
+recarga, login del revisor y bandeja pendiente, detalle con nombre de autor e
+historial, regreso del autor, confirmación de cancelación, Escape con foco
+restaurado, aceptación por teclado, estado terminal/historial y conservación de
+acceso del revisor mediante filtro cancelada. Revisor Dos ajeno: GET/acción 404.
+Sin controles de aprobación/rechazo; cero excepciones JavaScript y almacenamiento
+web vacío. Credenciales privadas únicamente en memoria, nunca en la salida.
+
+Capturas privadas .local/workflow-*-dev.png y .local/workflow-*-build.png.
+Revisados detalle de escritorio, detalle del revisor, confirmación móvil y bandeja.
+Viewport 1280x900 y 390x844, sin desbordamiento horizontal, etiquetas y foco
+visibles. No es prueba en dispositivo físico, auditoría completa de accesibilidad
+ni suite E2E multi-navegador de CI.
+
+.local/workflow-http-check.mjs sobre el compilado verificó filtro/detalle/historial,
+nombres mínimos, no-store, sesión ausente 401, CSRF/origen 403 en ambas acciones,
+repetición 409, campos manipulados 400, HTML/health 200 y API desconocida 404.
+No creó datos adicionales ni alteró solicitudes terminales.
+
+### Datos, revisión y cierre
+
+Tras suites y navegador: desarrollo conserva 4 usuarios, 3 tipos, 4 solicitudes
+y 8 eventos. app de pruebas: cero usuarios/tipos/solicitudes/eventos. Cero esquemas
+p02_test_ residuales. Se conservan los dos borradores de fase 05 y se añaden dos
+solicitudes ficticias enviadas/canceladas con tres eventos cada una:
+1f8a7e52-a37d-42df-947b-cdd7f26b69fb (dev) y
+c651b0de-581b-4f75-af3c-5d9e7619b296 (compilado).
+Sesiones temporales sujetas a caducidad normal; no se limpiaron sesiones ajenas.
+
+Revisión de SQL parametrizado, ámbito de permisos, transacciones, instantánea,
+CSRF/caducidad, errores, nombres mínimos, escape React y respuestas antiguas.
+Comparación en memoria con contraseñas y SESSION_SECRET: cero coincidencias
+en archivos versionables y assets compilados. Enlaces y diff correctos.
+No se versionan scripts privados de verificación ni capturas.
+
+HTTP/Vite y Chrome propios cerrados; store/pool liberados; PostgreSQL detenido
+con datos conservados y puertos 3000/5173/55433 sin listeners. Los wrappers npm
+de Windows terminan con código 1 al recibir Ctrl+C, con mensaje de cierre ordenado.
+
+Límites: sin idempotencia general, aprobaciones/rechazos, administración, adjuntos,
+notificaciones o despliegue. Repetir acciones finalizadas da 409; un fallo de red
+exige comprobar detalle. Paginación por desplazamiento puede variar ante nuevas
+inserciones; no hay versión optimista de contenido. Otros navegadores, TLS/proxy
+real y dispositivo móvil físico no comprobados. No se inicia el siguiente hito.
+
+### Manifiesto y publicación manual
+
+Modificados (12):
+
+- AGENTS.md y README.md.
+- apps/api/src/solicitudes.ts.
+- apps/web/src/App.tsx, Auth.tsx, Solicitudes.tsx y styles.css.
+- docs/AUTENTICACION.md, DECISIONES.md, PERSISTENCIA.md, SOLICITUDES.md y STATUS.md.
+
+Nuevos (4):
+
+- apps/api/tests/integration/workflow-fixture.ts.
+- apps/api/tests/integration/workflow.test.ts.
+- apps/web/src/SolicitudActions.tsx.
+- apps/web/tests/Workflow.test.tsx.
+
+main/HEAD/origin conservados; 16 archivos locales sin staging. Commit y push
+pendientes de Alex desde GitHub Desktop, seguidos de CI del nuevo commit.
+
+Summary: feat: enviar y cancelar solicitudes con bandeja del revisor
+
+Description:
+Añade envío con asignación automática por tipo, cancelación por autor y eventos
+atómicos. Incorpora filtros de estado, bandeja de consulta del revisor y detalle/
+historial coherentes con nombres mínimos. Protege permisos, concurrencia, sesión
+y respuestas tardías; exige confirmación de cancelación y permite recuperar
+el detalle ante conflictos o incertidumbre de red.
+Verificado con 115 pruebas, tipos, build, HTTP y Chrome en desarrollo y compilado.
+Actualiza contrato y documentación; conserva migraciones y dependencias.

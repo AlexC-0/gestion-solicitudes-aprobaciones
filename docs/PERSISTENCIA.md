@@ -222,3 +222,23 @@ sin tocar app. El recorrido de navegador crea borradores ficticios de desarrollo
 que se conservan; no se limpian datos de procedencia ajena.
 La migración de sesiones de fase 04 quedó publicada en 36806c8, CI 43202926347
 SUCCESS; las referencias anteriores a publicación pendiente son históricas.
+## Fase 06 — transición y lectura coherentes
+
+Se conservan ambas migraciones publicadas; el esquema e índices existentes cubren
+envío/cancelación y filtro. Solicitud/evento se confirman en transaction con el
+mismo cliente. FOR UPDATE sobre la fila propia precede a la validación del estado,
+contenido y fecha. La asignación consulta el tipo guardado y protege con FOR SHARE
+el tipo y su revisor, verificando rol antes del UPDATE.
+
+Cada transición genera un único clock_timestamp después del bloqueo y el evento
+copia actualizada_en desde SQL, sin perder microsegundos en conversiones JS. Las
+cancelaciones conservan responsable/envío y completan finalización. Todo fallo
+de evento revierte también los metadatos. No hay reapertura, borrado o reasignación.
+
+Detalle e historial usan una sentencia con agregación de eventos y nombres mínimos,
+por lo que comparten instantánea incluso bajo transiciones concurrentes.
+Los tests nuevos recorren pg_blocking_pids desde su conexión de bloqueo y comprueban
+que ambos competidores esperan (directamente o en su cola) antes de liberarla.
+No cuentan bloqueos ajenos ni llaman «concurrentes» a peticiones secuenciales.
+Los esquemas aleatorios propios _test se eliminan con la protección existente de
+current_database. Los datos app y las credenciales se conservan.
