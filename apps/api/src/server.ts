@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
+import { createSolicitudes } from './solicitudes.js';
 import { readPort } from './config.js';
 import { readAuthConfig } from './auth/config.js';
 import { createAuthentication } from './auth/authentication.js';
@@ -20,7 +21,7 @@ if (serveWeb && !existsSync(new URL('../../web/dist/index.html', import.meta.url
 const config = readAuthConfig(process.env, serveWeb);
 const pool = createPool(requireUrl('DATABASE_URL'));
 const auth = await createAuthentication({ pool, config });
-const app = createApp({ ...(serveWeb ? { webDistPath } : {}), authRouter: auth.router });
+const app = createApp({ ...(serveWeb ? { webDistPath } : {}), authRouter: auth.router, solicitudesRouter: createSolicitudes(pool, auth) });
 const server = createServer(app);
 server.listen(port, '127.0.0.1', () => {
   console.log('Servidor disponible en http://127.0.0.1:' + port);

@@ -4,7 +4,7 @@ import { Link, Navigate, Outlet } from 'react-router';
 import { AuthClient, type AuthState } from './auth-client';
 
 const Context=createContext<{client:AuthClient;state:AuthState}|null>(null);
-function useAuth(){const value=useContext(Context);if(!value)throw new Error('Falta contexto de acceso');return value;}
+export function useAuth(){const value=useContext(Context);if(!value)throw new Error('Falta contexto de acceso');return value;}
 export function AuthArea(){
   const queries=useQueryClient();
   const [client]=useState(()=>new AuthClient(queries));
@@ -12,7 +12,7 @@ export function AuthArea(){
   useEffect(()=>client.start(),[client]);
   return <Context.Provider value={{client,state}}><Outlet /></Context.Provider>;
 }
-function SessionStatus(){
+export function SessionStatus(){
   const {client,state}=useAuth();
   if(state.status==='checking')return <p role="status">Comprobando sesión…</p>;
   if(state.status==='error')return <div><p role="alert">{state.message}</p><button onClick={()=>{void client.check();}}>Volver a comprobar sesión</button></div>;
@@ -60,6 +60,7 @@ export function Account(){
       <dl><dt>Rol</dt><dd>{state.identity.user.rol==='solicitante'?'Solicitante':'Revisor'}</dd>
         <dt>Correo</dt><dd>{state.identity.user.correo}</dd></dl>
       <p>Sesión válida hasta <time dateTime={state.identity.expiresAt}>{new Date(state.identity.expiresAt).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</time>.</p>
+      <p>{state.identity.user.rol==='solicitante'&&<Link to="/solicitudes">Mis solicitudes</Link>}</p>
       <button onClick={()=>{void client.logout();}}>Cerrar sesión</button>
     </>:<SessionStatus />}
     <p><Link to="/">Estado técnico</Link></p>

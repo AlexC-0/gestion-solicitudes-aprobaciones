@@ -2,21 +2,24 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — fase 04, autenticación local verificada
+## Estado actual — fase 05, borradores propios verificados localmente
 
-La persistencia quedó cerrada en ff60200f8dbbafbcb10acea2f2293c4fd8584899 con
-[CI 43199015562 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43199015562),
-según comprobación aportada por Alex: instalación, bootstrap PostgreSQL, tipos,
-migraciones repetidas, 15 pruebas existentes, 16 de integración y build.
-Ese resultado corresponde exclusivamente a ese commit y no a la autenticación nueva.
+La fase 04 quedó publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con
+[CI 43202926347 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43202926347),
+según evidencia aportada por Alex: instalación, tipos, migraciones, build y 64
+pruebas (14 API, 15 frontend, 35 integración). Ese resultado acredita solo ese commit.
 
-Fase 04 implementada y comprobada localmente: acceso React/Express, sesiones
-PostgreSQL, CSRF, origen, límites, caducidad absoluta y logout. 64 pruebas correctas,
-HTTP real y recorrido Chrome en desarrollo y compilado. Falta revisión/publicación
-manual de Alex y CI de su propio commit. No se implementa gestión de solicitudes.
+Fase 05: catálogo, creación/listado/detalle/edición de borradores propios con
+permisos en Backend, evento inicial atómico y pantallas React. Verificación local:
+88 pruebas (14 API, 27 frontend, 47 integración), tipos, build, HTTP y Chrome real
+en desarrollo y compilado. La CI de esta entrega está pendiente de revisión,
+staging, commit y push manuales de Alex desde GitHub Desktop.
 
-Los apartados siguientes de preparación, reparación y cierre se conservan como
-históricos; los resultados nuevos de autenticación están al final.
+Sin nuevas dependencias ni migraciones. Datos conservados y procesos propios
+cerrados. El contrato concreto está en [SOLICITUDES](SOLICITUDES.md).
+Los apartados anteriores se conservan como históricos; el cierre de fase 05
+y su manifiesto de archivos están al final.
+
 
 ## Preparación documental inicial — histórico
 
@@ -664,3 +667,159 @@ en archivos versionables y en el frontend compilado. auth:configure repetido con
 Node/Chrome/PostgreSQL propios de las verificaciones. Al detener PostgreSQL antes de
 HTTP se observó el aviso genérico previsto de limpieza de sesiones, sin datos sensibles;
 health/frontend siguieron disponibles y el cierre posterior de HTTP/store/pool terminó.
+
+
+## Fase 05 — borradores propios (12/11/2026)
+
+### Punto de partida y alcance
+
+Ruta y raíz Git: C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones.
+Rama main, origin AlexC-0/gestion-solicitudes-aprobaciones, HEAD
+36806c81f5dfcf9990c52e5168bdcb9932d77ad2. Inicio limpio, sin cambios pendientes.
+No se inspeccionó ni modificó Proyecto 01. Se leyeron contrato funcional,
+decisiones, persistencia, autenticación y estado; SOLICITUDES se escribió antes
+del código y AGENTS refleja el nuevo encargo explícito.
+
+La CI histórica de autenticación 43202926347 SUCCESS y sus 64 pruebas fue
+aportada por Alex. No se ejecutó CI remota para estos cambios ni se atribuye
+a ellos ese éxito. No hubo staging, commit, push ni cambios de remoto.
+
+### Comportamiento y decisiones comprobados
+
+- Catálogo mínimo codigo/nombre; alta solo solicitante con identidad del servidor.
+  DTO estricto, título trim, tipo configurado, descripción opcional y Unicode por
+  puntos de código; rechazo de campos adicionales, NUL, surrogates y etiquetas.
+- Listado 20 por defecto, máximo 100; pagina/tamano validados, orden estable
+  creada_en DESC/id DESC y total coherente en una sentencia. Sin filtros.
+- Lista/detalle comparten aislamiento del brief. Ajena/inexistente/revisor sobre
+  borrador: 404. Creación por revisor: 403. Propia fuera de borrador: PATCH 409.
+- Transacción para solicitud/evento; fallo de evento revierte ambos. Edición
+  bloquea fila propia, comprueba estado y modifica contenido/fecha sin eventos.
+  Prueba concurrente verifica espera real del bloqueo con pg_blocking_pids.
+- Router privado reutiliza ciclo completo de sesión, caducidad absoluta, touch
+  fijo, identidad, parser y errores. No-store y CSRF/origen en escrituras.
+  Rutas API desconocidas conservan 404 fuera de sesiones.
+- React: listado/páginas, alta, detalle/historial y edición; carga, vacío, error,
+  confirmación, etiquetas, teclado y foco. Sin controles de futuras transiciones.
+- Caché private + usuario + generación, AbortSignal y descarte de respuestas
+  tardías. Se elimina formulario al cambiar/salir/caducar; mismo usuario/rol/
+  vencimiento al foco conserva el trabajo. CSRF tardío no inicia una creación
+  de la cuenta anterior. Error de red tras POST reconoce guardado incierto.
+- Se conservan dependencias, lockfile, CI, PROJECT_BRIEF y ambas migraciones
+  publicadas. No se ejecutó prepare, reset, initdb, seed ni regeneración de claves.
+
+### Comandos y resultados locales nuevos
+
+Node v24.13.0; npm efectivo 11.19.1 comprobado; PostgreSQL 18.6 existente en
+127.0.0.1:55433. Todos los comandos npm usan
+npx --yes --package=npm@11.19.1 npm como prefijo.
+
+| Comando tras ese prefijo | Resultado |
+| --- | --- |
+| ci | Correcto, 294 paquetes instalados; lockfile sin cambios |
+| run db:local -- status | Instancia existente detenida al comenzar |
+| run db:local -- start | Instancia propia arrancada, datos conservados |
+| run typecheck | API y frontend correctos |
+| test | 14 API + 27 frontend = 41, sin fallos ni omitidas |
+| run test:integration | 47 con PostgreSQL real, sin fallos ni omitidas |
+| run build | API TypeScript y frontend Vite correctos |
+| run dev | API 3000 + Vite 5173, proxy real comprobado |
+| start | API y frontend compilados en 3000, mismo origen |
+| run db:local -- stop / status | Detenida al finalizar, datos conservados |
+
+Total final: 88 pruebas. Se conservan las 64 anteriores y se añaden 12 de
+integración y 12 de frontend. Integración cubre Unicode frontera, campos extra,
+catálogo, transacciones, aislamiento, concurrencia, orden/páginas, caducidad y
+CSRF/origen, errores de SQL/store e independencia de health/404. Frontend cubre
+crear/leer/editar, errores, validación, páginas, conservación al foco, limpieza
+de sesión y respuestas/CSRF tardíos. Última integración: 47/47 en 81,96 s.
+
+Durante desarrollo, typecheck detectó isWellFormed fuera de la lib TS configurada:
+se sustituyó por validación Unicode compatible y volvieron a pasar los controles.
+Una consulta de versión npm sin elevación falló por permiso de caché (EPERM);
+repetida en el contexto autorizado devolvió 11.19.1. No se cambió npm global.
+npm ci conserva tres avisos moderados conocidos y avisos allowScripts de
+argon2/esbuild; no se usaron --force ni omisión de scripts/pruebas.
+
+### Navegador y HTTP reales
+
+.local/solicitudes-browser-check.mjs ejecutado contra 5173 y 3000:
+login, creación por teclado (Tab/select/textarea/Enter), comprobación al foco
+sin perder formulario, detalle, recarga con persistencia, edición y un único
+evento de creación, vuelta al listado y logout. Segunda cuenta: detalle/PATCH
+404 y listado sin datos de la primera. Revisor: creación 403, detalle 404 y
+ningún borrador en lista. Health correcto, cero excepciones JavaScript.
+Cookie HttpOnly no accesible y almacenamiento web vacío.
+
+Capturas privadas .local/solicitudes-form/detail/mobile/list-dev/build.png;
+inspeccionados formulario de escritorio y detalle móvil en ambos entornos.
+1280x900 y 390x844, sin desbordamiento; foco visible y campos etiquetados.
+No es una auditoría completa de accesibilidad, un dispositivo móvil físico
+ni una suite E2E multi-navegador incorporada a CI.
+
+.local/solicitudes-http-check.mjs contra el compilado final comprobó listado y
+detalle persistentes, historial, no-store, CSRF ausente y origen ajeno 403,
+HTML/assets 200 y recursos/API desconocidos 404. No creó más solicitudes.
+
+.local/phase05-outage.mjs detuvo PostgreSQL mientras HTTP seguía activo:
+con cookie autenticada, catálogo/lista/me devolvieron 503 genérico y no-store;
+health/HTML siguieron en 200 y API desconocida en 404. Primer intento del
+harness agotó su keep-alive mientras ejecutaba síncronamente la parada y recibió
+ECONNRESET; repetido con conexiones nuevas pasó. No se reintentaron escrituras.
+Después se cerraron HTTP/store/pool. Ctrl+C produjo el mensaje de cierre ordenado;
+el wrapper npm de Windows termina con código 1 por interrupción, no por fallo de API.
+
+### Conservación de datos, revisión y límites
+
+Consulta real a ambas bases, tras todas las suites:
+desarrollo 4 usuarios, 3 tipos, 2 solicitudes y 2 eventos; app de pruebas cero
+filas en esas tablas. Cero esquemas p02_test_ residuales en ambas bases.
+Los dos borradores ficticios de Chrome se conservan:
+87ab33fa-7f33-4ddc-a6a3-29ee35ea71fd (desarrollo) y
+d5a727e6-0a97-48f8-9dd6-80be31b5dc6e (compilado), títulos «Prueba fase 05 … editada».
+Las sesiones temporales reales quedan sujetas a su caducidad; no se borraron
+sesiones desconocidas. Credenciales, .env y cluster conservados.
+
+Revisión de SQL parametrizado, permisos, errores, no-store, escape React y
+respuestas tardías. Comparación en memoria contra contraseñas locales y
+SESSION_SECRET: cero coincidencias en archivos versionables y assets compilados.
+Enlaces locales verificados y diff revisado. Sin secretos o capturas en Git.
+PostgreSQL detenido y puertos 3000, 5173, 55433 sin listeners al terminar;
+Chrome de verificación cerrado y perfiles propios eliminados.
+
+Límites: sin filtros de estado, idempotencia de creación ni versiones optimistas;
+páginas pueden desplazarse ante inserciones concurrentes y última escritura gana
+en campos editados simultáneamente. TLS real/proxy y otros navegadores no probados.
+Continúan los avisos moderados de herramientas ya documentados. Sin envío,
+asignación, cancelación, resolución, bandeja de revisores, administración ni despliegue.
+No se avanza al siguiente hito.
+
+### Archivos y entrega manual
+
+Modificados (13):
+- AGENTS.md y README.md.
+- apps/api/src/app.ts, apps/api/src/server.ts y apps/api/src/auth/authentication.ts.
+- apps/web/src/App.tsx, apps/web/src/Auth.tsx, apps/web/src/auth-client.ts y apps/web/src/styles.css.
+- docs/AUTENTICACION.md, docs/DECISIONES.md, docs/PERSISTENCIA.md y docs/STATUS.md.
+
+Nuevos (5):
+- apps/api/src/solicitudes.ts.
+- apps/api/tests/integration/solicitudes.test.ts.
+- apps/web/src/Solicitudes.tsx.
+- apps/web/tests/Solicitudes.test.tsx.
+- docs/SOLICITUDES.md.
+
+main/HEAD/origin conservados; 18 archivos locales sin staging. Alex revisará,
+seleccionará, hará commit y push desde GitHub Desktop y comprobará la CI de ese
+nuevo commit. No se publicaron cambios automáticamente.
+
+Summary propuesto: feat: gestionar borradores propios con permisos y persistencia
+
+Description propuesta:
+Añade catálogo y creación, listado paginado, detalle/historial y edición de
+borradores propios en Express y React. Aplica permisos por rol/autor, evento
+inicial atómico, bloqueo de edición, validación Unicode y ciclo completo de sesión.
+Conserva formularios al revalidar la misma sesión y descarta datos/respuestas de
+cuentas anteriores. Actualiza contrato y documentación de fase 05.
+Verificado con tipos, 88 pruebas, build, HTTP y Chrome en desarrollo y compilado.
+Sin nuevas dependencias ni migraciones; CI pendiente de esta publicación.

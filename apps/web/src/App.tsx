@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Route, Routes } from 'react-router';
 import { checkHealth } from './health';
+import { RequestsArea, RequestsList, DraftForm, RequestDetail, EditRequest } from './Solicitudes';
 import { AuthArea, Login, Account } from './Auth';
 
 function Home() {
@@ -60,10 +61,16 @@ export function App() {
             <Route element={<AuthArea />}>
               <Route path="/acceso" element={<Login />} />
               <Route path="/cuenta" element={<Account />} />
+              <Route path="/solicitudes" element={<RequestsArea />}>
+                <Route index element={<RequestsList />} />
+                <Route path="nueva" element={<DraftForm />} />
+                <Route path=":id" element={<RequestDetail />} />
+                <Route path=":id/editar" element={<EditRequest />} />
+              </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <p className="scope-note">Acceso de usuarios disponible. La gestión de solicitudes está en desarrollo.</p>
+          <p className="scope-note">Borradores propios disponibles. El envío y la resolución se incorporarán en próximas fases.</p>
         </main>
         <footer>CHAMBA DIARIA · Aprender construyendo</footer>
       </div>

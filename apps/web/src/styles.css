@@ -50,3 +50,26 @@ nav { display: flex; gap: 1.25rem; }
 .auth-panel dd { margin: 0 0 1rem; overflow-wrap: anywhere; }
 .auth-panel dt { font-weight: 600; }
 .account-name { font-size: 1.4rem; font-weight: 650; }
+
+nav { flex-wrap: wrap; }
+.requests-panel { max-width: 54rem; overflow-wrap: anywhere; }
+.requests-panel > nav { margin-bottom: 1.5rem; }
+.requests-panel h2 { font-size: 1.5rem; }
+.requests-panel form { display: grid; gap: .65rem; margin-top: 1.5rem; }
+.requests-panel input, .requests-panel select, .requests-panel textarea {
+  font: inherit; width: 100%; min-width: 0; padding: .7rem; border: 1px solid #87958d;
+  border-radius: 5px; background: #fff; color: #202d39;
+}
+.requests-panel textarea { resize: vertical; }
+.requests-panel label, .requests-panel dt { font-weight: 650; }
+.requests-panel dd { margin: .25rem 0 1.25rem; }
+.requests-panel small { color: #53616a; }
+.plain-text { white-space: pre-wrap; }
+.form-actions, .pagination { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1rem; }
+.request-list { padding: 0; list-style: none; }
+.request-list li { border-top: 1px solid #d8ddd7; padding: 1rem 0; }
+.request-list a { font-weight: 650; }
+.request-list p, .history p { color: #53616a; margin: .5rem 0; }
+.badge { display: inline-block; font-size: .8rem; margin-left: .75rem; background: #eef2ec; padding: .1rem .6rem; border-radius: 4px; }
+.action-link { display: inline-block; padding: .45rem 0; font-weight: 650; }
+.history { padding-left: 1.3rem; }

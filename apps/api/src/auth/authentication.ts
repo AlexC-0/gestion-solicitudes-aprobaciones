@@ -17,7 +17,7 @@ export const PREAUTH_MS = 15 * 60 * 1000;
 export const AUTH_MS = 8 * 60 * 60 * 1000;
 export const COOKIE = 'chamba.sid';
 export interface PublicUser { id: string; nombre: string; correo: string; rol: 'solicitante' | 'revisor' }
-class AuthError extends Error {
+export class AuthError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) { super(message); }
 }
 const loginInput = z.strictObject({
@@ -90,14 +90,15 @@ export async function createAuthentication(options: {
     rolling: false, cookie,
   });
   router.use(sessionMiddleware);
-  router.use(async (req, res, next) => {
+  const lifecycle: RequestHandler = async (req, res, next) => {
     if ((req.session.expiresAt !== undefined && req.session.expiresAt <= now()) ||
         (req.session.userId && !req.session.expiresAt)) {
       await regenerate(req); res.clearCookie(COOKIE, cookie);
     }
     if (req.session.expiresAt) fixedExpiry(req);
     next();
-  });
+  };
+  router.use(lifecycle);
   router.use(express.json({ limit: '16kb', strict: true }));
   router.get('/csrf', async (req, res) => {
     if (req.session.userId) await identity(req);
@@ -151,8 +152,14 @@ export async function createAuthentication(options: {
     } else if (typeof error === 'object' && error !== null && 'type' in error &&
         ['entity.too.large', 'entity.parse.failed'].includes(String(error.type))) {
       res.status(error.type === 'entity.too.large' ? 413 : 400).json({ error: { code: 'INVALID_INPUT', message: 'Cuerpo JSON no válido o demasiado grande.' } });
-    } else res.status(503).json({ error: { code: 'AUTH_UNAVAILABLE', message: 'No se puede comprobar la sesión en este momento.' } });
+    } else res.status(503).json({ error: { code: 'AUTH_UNAVAILABLE', message: 'No se puede completar la operación en este momento.' } });
   };
   router.use(handleError);
-  return { router, sessionMiddleware, requireAuthentication, protectWrite, store, close: () => { limits.close(); store.close(); } };
+  function createPrivateRouter() {
+    const privateRouter = express.Router();
+    privateRouter.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+    privateRouter.use(sessionMiddleware, lifecycle, requireAuthentication, express.json({ limit: '16kb', strict: true }));
+    return privateRouter;
+  }
+  return { router, sessionMiddleware, createPrivateRouter, handleError, requireAuthentication, protectWrite, store, close: () => { limits.close(); store.close(); } };
 }

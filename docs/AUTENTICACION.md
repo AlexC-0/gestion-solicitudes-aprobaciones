@@ -95,7 +95,8 @@ una caída posterior de PostgreSQL afecta auth, no health ni los archivos estát
 
 En React, AuthClient vive en memoria dentro de /acceso y /cuenta. Las consultas
 privadas futuras deben empezar su queryKey por private. Cancela y elimina esas
-consultas en cada cambio/revalidación, sin eliminar health. Un contador de generación
+consultas al cambiar sesión, sin eliminar health. La fase 05 conserva caché y formulario
+cuando la revalidación al foco devuelve la misma identidad, rol y vencimiento. Un contador de generación
 impide que una respuesta atrasada reponga identidad anterior aunque ignore abort.
 El evento changed de BroadcastChannel no contiene identidad, cookies o tokens.
 Si BroadcastChannel no existe, sigue disponible la revalidación al recuperar foco.
@@ -114,4 +115,22 @@ arrancar otro proceso API con el mismo secreto. Chrome real verificó login por 
 recarga, logout, cambio de cuenta, dos pestañas y error de red en desarrollo y compilado;
 vistas 1280x900/390x844 inspeccionadas. Evidencia completa en [STATUS](STATUS.md).
 
-Próximo hito recomendado: borradores propios con permisos por rol/autor; no iniciado.
+El hito de borradores está implementado en fase 05; contrato y alcance en [SOLICITUDES](SOLICITUDES.md).
+
+## Ampliación de fase 05
+
+La evidencia remota de fase 04 corresponde a 36806c8 / CI 43202926347 SUCCESS,
+con 64 pruebas; se conserva arriba el relato de implementación como histórico.
+createPrivateRouter comparte sesión, lifecycle (caducidad/touch fijo), identidad,
+JSON y no-store; las rutas de negocio terminan con handleError. Nunca basta con
+montar sessionMiddleware. Ninguna actividad de borradores renueva el vencimiento.
+
+AuthClient distingue revisiones de comprobación y generaciones de datos privados.
+El foco no desmonta ni limpia un formulario si identidad, rol y vencimiento siguen
+iguales. Cambiar esos datos, logout, caducidad, error técnico o mensaje changed
+invalida la generación, aborta lecturas/escrituras y elimina las consultas private.
+Abortar una petición no deshace una escritura que el servidor ya haya confirmado.
+Las respuestas tardías tampoco pueden guardar token, navegar ni confirmar en otra
+cuenta. Un 401 leyendo datos u obteniendo CSRF para guardarlos invalida la sesión.
+Los formularios son memoria del componente, desmontada al cambiar generación.
+Sin almacenamiento web ni reintentos automáticos.

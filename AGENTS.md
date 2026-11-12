@@ -13,15 +13,20 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 04, autenticación
+## Alcance vigente: fase 05, borradores propios
 
-El encargo actual sustituye la prohibición temporal de autenticación. Autoriza
-express-session/connect-pg-simple, nueva migración de sesiones, CSRF, Zod, límites
-de acceso, interfaz React y pruebas/documentación. Lee docs/AUTENTICACION.md antes
-de modificar estos controles. La persistencia está cerrada en ff60200 y CI
-43199015562 SUCCESS; no atribuyas esa evidencia a la autenticación nueva.
+El encargo actual autoriza catálogo, creación, listado paginado, detalle/historial
+y edición de borradores propios con permisos en Backend y pantallas React.
+Lee docs/SOLICITUDES.md y docs/AUTENTICACION.md antes de cambiar estos controles.
+La fase 04 está publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con CI
+43202926347 SUCCESS y 64 pruebas, según evidencia de Alex. Ese resultado no
+acredita los cambios nuevos. La CI de fase 05 requiere publicación manual propia.
 Conserva migraciones publicadas, datos y credenciales. Usa status/start/stop sobre
 la instancia existente; no prepare, reset ni reinicialización en esta fase.
+Creación y evento atómicos; edición con bloqueo y comprobación de autor/estado
+en la misma transacción. Listado/detalle comparten el ámbito definitivo del brief.
+No añadas envío, asignación, cancelación, aprobación, rechazo ni bandeja de revisor.
+No añadas migraciones sin necesidad concreta ni continúes automáticamente al siguiente hito.
 
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
@@ -54,7 +59,7 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   contraseñas, roles o asignaciones existentes. No muestres credenciales.
 - CI: PostgreSQL 18 efímero del runner con roles propios, readiness, migraciones,
   integración y controles existentes; no necesita Docker local ni credenciales locales.
-- No implementes gestión de solicitudes, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
+- No implementes acciones de solicitudes fuera de los borradores, registro público, recuperación, OAuth, MFA o administración. No añadas ORM ni servicios externos.
 - No instales herramientas globales ni cambies Node.js o servicios del sistema.
   No cierres procesos ajenos; usa otros puertos si los previstos están ocupados.
 - Cierra los procesos temporales propios. No avances automáticamente al siguiente hito.
@@ -113,4 +118,13 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
 - Frontend: cancela consultas privadas, elimina caché y descarta respuestas tardías
   al cambiar sesión; sin localStorage/sessionStorage para autenticación ni reintentos
   automáticos de login/logout. Un error de red no acredita logout remoto.
-- No avances al siguiente hito de borradores propios sin un nuevo encargo.
+- Rutas privadas: reutiliza createPrivateRouter y handleError, no únicamente
+  sessionMiddleware; conserva caducidad absoluta, no-store y errores seguros.
+- Consultas frontend: claves private + usuario + generación y AbortSignal.
+  Descarta escrituras tardías al cambiar sesión. Conserva formularios al revalidar
+  la misma identidad/vencimiento y elimínalos al salir/caducar/cambiar cuenta.
+- Texto: puntos de código Unicode, título trim, descripción sin normalizar,
+  sin NUL/surrogates aislados ni HTML; conserva el contrato SOLICITUDES.
+- Sin reintentos automáticos de escritura. Un fallo de red tras POST puede dejar
+  un borrador guardado: ofrece comprobar el listado antes de repetir.
+- No avances a envío/resolución/cancelación sin un nuevo encargo.

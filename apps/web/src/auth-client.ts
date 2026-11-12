@@ -26,6 +26,10 @@ export class AuthClient {
   private state: AuthState={status:'checking'};
   private listeners=new Set<()=>void>();
   private revision=0;
+  private epoch=0;
+  private privateAbort=new AbortController();
+  getSessionKey=()=>this.epoch;
+  isSessionCurrent=(epoch:number)=>epoch===this.epoch && this.state.status==='authenticated';
   private abort: AbortController | undefined;
   private token: string | undefined;
   private expiry: ReturnType<typeof setTimeout> | undefined;
@@ -44,13 +48,15 @@ export class AuthClient {
     this.listeners.forEach(fn=>fn());
   }
   private clearPrivate() {
+    ++this.epoch;
+    this.privateAbort.abort();this.privateAbort=new AbortController();this.token=undefined;
     const filter={predicate:(q:{queryKey:readonly unknown[]})=>q.queryKey[0]==='private'};
     void this.queries.cancelQueries(filter);
     this.queries.removeQueries(filter);
   }
-  private begin() {
+  private begin(reset=true) {
     this.abort?.abort();this.abort=new AbortController();
-    this.token=undefined;this.clearPrivate();
+    if(reset)this.clearPrivate();
     return {revision:++this.revision,signal:this.abort.signal};
   }
   private current(revision:number){return revision===this.revision;}
@@ -70,15 +76,63 @@ export class AuthClient {
     if(!value||typeof value!=='object'||!('csrfToken' in value)||typeof value.csrfToken!=='string')throw new Error(technical);
     return value.csrfToken;
   }
-  async check() {
-    const op=this.begin();this.set({status:'checking'});
+  async check(reset=false) {
+    const previous=this.state.status==='authenticated'?this.state.identity:undefined;
+    const op=this.begin(reset || !previous);
+    if(reset || !previous)this.set({status:'checking'});
     try {
       const result=identity(await this.http('me',op.signal));
-      if(this.current(op.revision))this.set({status:'authenticated',identity:result});
+      if(!this.current(op.revision))return;
+      if(previous && (previous.user.id!==result.user.id || previous.user.rol!==result.user.rol || previous.expiresAt!==result.expiresAt))this.clearPrivate();
+      this.set({status:'authenticated',identity:result});
     }catch(error){
       if(!this.current(op.revision))return;
+      this.clearPrivate();
       this.set(error instanceof AuthFailure&&error.status===401?{status:'anonymous'}:{status:'error',message:technical});
     }
+  }
+  async request<T>(path:string,signal:AbortSignal,options:RequestInit={}):Promise<T> {
+    const epoch=this.epoch;
+    const current=()=>{if(!this.isSessionCurrent(epoch))throw new DOMException('Sesión cambiada','AbortError');};
+    current();
+    const combined=AbortSignal.any([signal,this.privateAbort.signal]);
+    const headers=new Headers(options.headers);
+    const writing=options.method==='POST'||options.method==='PATCH';
+    if(writing){
+      if(!this.token){
+        try {
+          const token=await this.csrf(combined);current();this.token=token;
+        } catch(error) {
+          current();
+          if(error instanceof AuthFailure && error.status===401)this.expire();
+          throw error;
+        }
+      }
+      headers.set('X-CSRF-Token',this.token);
+      headers.set('Content-Type','application/json');
+    }
+    current();
+    let response:Response;
+    try{
+      response=await fetch('/api/'+path,{...options,headers,signal:combined,credentials:'same-origin',cache:'no-store'});
+    }catch{
+      current();
+      throw new Error(writing?'No se ha podido confirmar el guardado. Puede haberse guardado; comprueba Mis solicitudes antes de repetirlo.':'No se han podido cargar los datos. Comprueba la conexión y vuelve a intentarlo.');
+    }
+    current();
+    if(response.status===401){this.expire();throw new AuthFailure(401,'La sesión ha caducado.');}
+    if(!response.ok){
+      if(response.status===403)this.token=undefined;
+      const data:unknown=await response.json().catch(()=>undefined);current();
+      let message='No se puede completar la operación. Vuelve a intentarlo más tarde.';
+      if([400,403,404,409,413].includes(response.status) && data && typeof data==='object' && 'error' in data){
+        const error=data.error;
+        if(error && typeof error==='object' && 'message' in error && typeof error.message==='string')message=error.message;
+      }
+      throw new AuthFailure(response.status,message);
+    }
+    try { const data=await response.json() as T;current();return data; }
+    catch { current();throw new Error(writing?'No se ha podido confirmar el guardado. Comprueba Mis solicitudes antes de repetirlo.':'La respuesta no se ha podido leer. Vuelve a intentarlo.'); }
   }
   async login(correo:string,password:string) {
     const op=this.begin();
@@ -117,7 +171,7 @@ export class AuthClient {
     document.addEventListener('visibilitychange',visibility);
     if(typeof BroadcastChannel!=='undefined'){
       this.channel=new BroadcastChannel('chamba-auth');
-      this.channel.onmessage=event=>{if(event.data==='changed')revalidate();};
+      this.channel.onmessage=event=>{if(event.data==='changed')void this.check(true);};
     }
     void this.check();
     return()=>{

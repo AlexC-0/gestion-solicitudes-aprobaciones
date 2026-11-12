@@ -261,3 +261,30 @@ synchronizer token). No es una auditoría externa ni autorización para desplega
 Pendiente: autorización de borradores propios y flujos de solicitudes, concurrencia
 de resoluciones, TLS/proxy de un despliegue y CI remota de esta nueva fase.
 No se implementan registro, recuperación, OAuth, MFA o administración.
+
+## Fase 05 — borradores propios
+
+Nuevo encargo explícito sustituye la restricción temporal anterior. Contrato escrito
+primero en [SOLICITUDES](SOLICITUDES.md), después API y pantallas. La autenticación
+quedó cerrada en 36806c8, CI 43202926347 SUCCESS (64 pruebas); evidencia de Alex,
+no atribuida a esta fase.
+
+- Cinco endpoints, objetos/query estrictos; paginación por desplazamiento de 20,
+  máximo 100 y desempate por UUID descendente. Sin filtros en esta fase.
+- Ámbito SQL común para lista/detalle conforme al brief; revisor nunca ve borradores.
+  No se construye bandeja de revisores. Editar exige autor y borrador dentro del bloqueo.
+- Sin dependencias ni migraciones nuevas. Evento y creación atómicos; editar no
+  añade historial de versiones. Concurrencia documentada como última escritura.
+- Unicode por puntos de código, sin NFC/NFD; título trim y descripción literal,
+  rechazo de NUL/surrogates aislados/etiquetas. React nunca interpreta HTML.
+- Factoría de router privado comparte todo el ciclo de sesión existente. Health
+  y estáticos independientes. Errores seguros y no-store.
+- Generación de datos privados separada de la revalidación de identidad; foco de
+  la misma sesión conserva formularios. Cambio/expiración/salida cancela caché,
+  desmonta formularios y descarta respuestas y mutaciones antiguas.
+- Error de red tras creación se presenta como guardado no confirmado, con acceso
+  al listado antes de repetir; no hay idempotencia nueva ni reintentos automáticos.
+
+Los avisos moderados/allowScripts ya documentados se conservan. No se amplían
+dependencias ni infraestructura. Sin envío, asignación, cancelación, resolución,
+administración ni despliegue. Resultados locales y límites reales en STATUS.

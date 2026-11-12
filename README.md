@@ -11,7 +11,7 @@ También existe una vista de página no encontrada.
 
 Hay esquema PostgreSQL, migraciones, pool/transacciones y seed ficticio con roles.
 Hay acceso real, sesiones PostgreSQL, CSRF y cierre de sesión. La autorización
-de solicitudes y su gestión funcional todavía no están implementadas.
+por rol y autor permite crear, listar, consultar y editar borradores propios.
 GET /api/health solo acredita que el proceso HTTP responde: no comprueba PostgreSQL
 ni la disponibilidad completa del sistema. No hay despliegue.
 
@@ -30,16 +30,16 @@ npm install sobre dependencias, conservando las versiones directas acordadas.
 packageManager documenta la versión y el workflow comprueba que coincide con la
 que ejecuta efectivamente. No basta con cambiar ese campo para cambiar la herramienta.
 
-Con el entorno PostgreSQL propio existente, configura auth y migra antes del primer
-arranque de esta fase (procedimiento completo al final). Desde PowerShell:
+Para la primera configuración de una copia nueva, prepara autenticación y migraciones.
+Si ya tienes la fase 04, usa directamente el apartado «Borradores propios» del final:
 
 ```powershell
 cd C:\Users\kaosk\source\repos\gestion-solicitudes-aprobaciones
 npx --yes --package=npm@11.19.1 npm ci
-npm run auth:configure
-npm run db:local -- start
-npm run db:migrate
-npm run dev
+npx --yes --package=npm@11.19.1 npm run auth:configure
+npx --yes --package=npm@11.19.1 npm run db:local -- start
+npx --yes --package=npm@11.19.1 npm run db:migrate
+npx --yes --package=npm@11.19.1 npm run dev
 ```
 
 Abre http://127.0.0.1:5173. Vite sirve la interfaz y envía las peticiones relativas
@@ -51,6 +51,9 @@ si Windows pregunta si deseas terminar un trabajo por lotes, confirma con S.
 Si un proceso termina, concurrently detiene el otro.
 
 ## Comandos desde la raíz
+
+En las tablas se abrevian los scripts como npm run; ejecútalos siempre con el
+prefijo npx --yes --package=npm@11.19.1 npm, como en los ejemplos.
 
 | Comando | Función |
 | --- | --- |
@@ -78,7 +81,7 @@ Ejemplo con otros puertos, en la misma terminal desde la raíz:
 ```powershell
 $env:API_PORT = '3100'
 $env:WEB_PORT = '5174'
-npm run dev
+npx --yes --package=npm@11.19.1 npm run dev
 ```
 
 Abre http://127.0.0.1:5174 en ese caso. En Linux/macOS se pueden pasar las variables
@@ -92,10 +95,10 @@ DATABASE_URL y TEST_DATABASE_URL son privadas y nunca se exponen con VITE_.
 Detén primero el desarrollo si vas a reutilizar su puerto API. Desde la raíz:
 
 ```powershell
-npm run typecheck
-npm test
-npm run build
-npm start
+npx --yes --package=npm@11.19.1 npm run typecheck
+npx --yes --package=npm@11.19.1 npm test
+npx --yes --package=npm@11.19.1 npm run build
+npx --yes --package=npm@11.19.1 npm start
 ```
 
 Abre http://127.0.0.1:3000, o el puerto que hayas conservado en API_PORT. Ahora el
@@ -140,27 +143,30 @@ con SUCCESS y 15 pruebas. Ese resultado pertenece solo a ese commit.
 La persistencia quedó cerrada en ff60200f8dbbafbcb10acea2f2293c4fd8584899 con
 [CI 43199015562 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43199015562):
 instalación, bootstrap, tipos, migraciones, 15 pruebas existentes, 16 de integración y build.
-Ese cierre no acredita los cambios nuevos de autenticación. La fase 04 queda local,
-sin staging/commit/push; Alex publicará y comprobará la CI de su propio commit.
+La fase 04 quedó publicada en 36806c81f5dfcf9990c52e5168bdcb9932d77ad2 con
+[CI 43202926347 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43202926347),
+según Alex: instalación, tipos, migraciones, build y 64 pruebas.
+La fase 05 queda local, sin staging/commit/push; su CI está pendiente de publicación.
 
 El proyecto tiene entorno PostgreSQL propio e independiente del Proyecto 01.
-Autorización de solicitudes y gestión de negocio siguen pendientes. No hay despliegue.
+Los borradores propios están implementados; envío y resolución siguen pendientes. No hay despliegue.
 
-## Persistencia local — Windows
+## Primera preparación de una copia nueva — Windows
 
+Solo para un entorno nuevo. No ejecutes prepare ni regeneres credenciales en la instancia existente.
 Desde la raíz, después de la instalación con npm 11.19.1:
 
 ```powershell
-npm run db:local -- status
-npm run db:local -- prepare
-npm run db:local -- start
-npm run db:check
-npm run db:migrate
-npm run db:seed
-npm run db:check:test
-npm run db:migrate:test
-npm run test:integration
-npm run db:local -- stop
+npx --yes --package=npm@11.19.1 npm run db:local -- status
+npx --yes --package=npm@11.19.1 npm run db:local -- prepare
+npx --yes --package=npm@11.19.1 npm run db:local -- start
+npx --yes --package=npm@11.19.1 npm run db:check
+npx --yes --package=npm@11.19.1 npm run db:migrate
+npx --yes --package=npm@11.19.1 npm run db:seed
+npx --yes --package=npm@11.19.1 npm run db:check:test
+npx --yes --package=npm@11.19.1 npm run db:migrate:test
+npx --yes --package=npm@11.19.1 npm run test:integration
+npx --yes --package=npm@11.19.1 npm run db:local -- stop
 ```
 
 prepare descarga PostgreSQL 18.6 de EDB si hace falta, crea el entorno exclusivamente
@@ -176,7 +182,7 @@ No altera servicios globales ni PATH. Conserva los datos al detenerlo.
 | npm run db:seed | Prepara 2 solicitantes, 2 revisores y 3 tipos; no crea solicitudes |
 | npm run db:check:test | Comprueba identidad de la base de pruebas |
 | npm run db:migrate:test | Aplica migraciones en app de la base de pruebas |
-| npm run test:integration | Persistencia y autenticación con PostgreSQL real y esquemas exclusivos |
+| npm run test:integration | Persistencia, autenticación y borradores con PostgreSQL real y esquemas exclusivos |
 | npm run db:local -- status/start/stop | Consulta/inicia/detiene solo la instancia propia |
 
 Contraseñas ficticias iniciales: `.local/seed-credentials.json`, archivo privado.
@@ -201,11 +207,11 @@ Desde la raíz; no vuelvas a preparar ni reinicializar el cluster existente:
 
 ```powershell
 npx --yes --package=npm@11.19.1 npm ci
-npm run auth:configure
-npm run db:local -- status
-npm run db:local -- start
-npm run db:migrate
-npm run dev
+npx --yes --package=npm@11.19.1 npm run auth:configure
+npx --yes --package=npm@11.19.1 npm run db:local -- status
+npx --yes --package=npm@11.19.1 npm run db:local -- start
+npx --yes --package=npm@11.19.1 npm run db:migrate
+npx --yes --package=npm@11.19.1 npm run dev
 ```
 
 Abre http://127.0.0.1:5173/acceso. Usa una cuenta ficticia de tu archivo privado
@@ -232,13 +238,50 @@ Para comprobar la fase:
 npx --yes --package=npm@11.19.1 npm run typecheck
 npx --yes --package=npm@11.19.1 npm test
 npx --yes --package=npm@11.19.1 npm run build
-npm run db:check
-npm run db:check:test
-npm run db:migrate:test
+npx --yes --package=npm@11.19.1 npm run db:check
+npx --yes --package=npm@11.19.1 npm run db:check:test
+npx --yes --package=npm@11.19.1 npm run db:migrate:test
 npx --yes --package=npm@11.19.1 npm run test:integration
-npm run db:local -- stop
+npx --yes --package=npm@11.19.1 npm run db:local -- stop
 ```
 
 Contrato, cookies, CSRF, caducidad, límites y condiciones de error en
 [AUTENTICACION](docs/AUTENTICACION.md). Los resultados reales y las limitaciones
 siguen en [STATUS](docs/STATUS.md); no son una auditoría exhaustiva de seguridad.
+
+## Borradores propios — fase 05
+
+Con el entorno existente no vuelvas a preparar el cluster, migrar de nuevo ni
+generar credenciales para esta fase: no se añade ninguna migración ni dependencia.
+Desde la raíz, usando npm 11.19.1 también para scripts:
+
+~~~powershell
+npx --yes --package=npm@11.19.1 npm run db:local -- status
+npx --yes --package=npm@11.19.1 npm run db:local -- start
+npx --yes --package=npm@11.19.1 npm run dev
+~~~
+
+Abre http://127.0.0.1:5173/acceso con una cuenta ficticia solicitante existente.
+Desde Mi cuenta → Mis solicitudes puedes crear un borrador, abrirlo, recargar y
+editar título, tipo y descripción. Tiene historial de creación; editar no genera
+transiciones. Los otros solicitantes y revisores no ven ni modifican ese borrador.
+El listado pagina de 20 en 20. Todavía no hay controles de envío ni resolución.
+
+Credenciales locales ya existentes en .local/seed-credentials.json, excluidas de Git.
+No las pegues en documentación ni consola. Los recorridos de verificación conservan
+sus borradores, identificados con el título «Prueba fase 05 …».
+
+Para probar el compilado, detén desarrollo con Ctrl+C y ejecuta:
+
+~~~powershell
+npx --yes --package=npm@11.19.1 npm run build
+npx --yes --package=npm@11.19.1 npm start
+~~~
+
+Abre http://127.0.0.1:3000/acceso. Al terminar cierra HTTP con Ctrl+C y detén la
+instancia propia con npx --yes --package=npm@11.19.1 npm run db:local -- stop.
+Los datos quedan guardados. Un error de red al crear puede haber ocurrido después
+del guardado: comprueba Mis solicitudes antes de repetir, para evitar duplicados.
+
+Contrato de API, Unicode, permisos y concurrencia: [SOLICITUDES](docs/SOLICITUDES.md).
+Resultados actuales y publicación pendiente: [STATUS](docs/STATUS.md).

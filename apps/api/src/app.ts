@@ -2,7 +2,7 @@ import { extname, resolve } from 'node:path';
 import express, { type Router } from 'express';
 import { errorHandler, notFound } from './errors.js';
 
-export function createApp(options: { webDistPath?: string; authRouter?: Router } = {}) {
+export function createApp(options: { webDistPath?: string; authRouter?: Router; solicitudesRouter?: Router } = {}) {
   const app = express();
   app.disable('x-powered-by');
 
@@ -10,6 +10,7 @@ export function createApp(options: { webDistPath?: string; authRouter?: Router }
     response.set('Cache-Control', 'no-store').json({ status: 'ok' });
   });
   if (options.authRouter) app.use('/api/auth', options.authRouter);
+  if (options.solicitudesRouter) app.use('/api', options.solicitudesRouter);
   // Resolver la API antes de cualquier archivo estático o fallback de navegación.
   app.use('/api', notFound);
 

@@ -205,3 +205,20 @@ Consúltese [AUTENTICACION](AUTENTICACION.md) para contrato y expiración.
 
 La persistencia quedó cerrada en ff60200/CI 43199015562 SUCCESS. Esta nueva migración
 y su autenticación aún requieren publicación manual y CI de su propio commit.
+
+## Fase 05 — operaciones de borrador
+
+No se cambia ni añade ninguna migración: las tablas, FKs e índices existentes
+cubren el contrato de [SOLICITUDES](SOLICITUDES.md). INSERT de solicitud y evento
+usan transaction y la misma conexión. PATCH bloquea la fila propia con FOR UPDATE,
+comprueba estado y aplica los campos recibidos, usando clock_timestamp para que
+el instante no quede anterior a una edición confirmada mientras esperaba el bloqueo.
+Ediciones concurrentes preservan campos disjuntos y prevalece la última escritura
+en campos coincidentes; no hay versiones ni eventos de edición. El listado obtiene
+filas/total en una sentencia y conserva orden creada_en DESC, id DESC.
+
+Integración añade esquemas propios _test y fallos controlados de evento/tablas,
+sin tocar app. El recorrido de navegador crea borradores ficticios de desarrollo
+que se conservan; no se limpian datos de procedencia ajena.
+La migración de sesiones de fase 04 quedó publicada en 36806c8, CI 43202926347
+SUCCESS; las referencias anteriores a publicación pendiente son históricas.
