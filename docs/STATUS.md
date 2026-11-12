@@ -2,7 +2,7 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — fase 07, aprobación y rechazo
+## Estado actual — corrección de CI de fase 07
 
 La fase 06 quedó publicada en f1a10a764d72c6622ccc910b247152ad36b2ec66,
 con [CI 43210342557 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43210342557),
@@ -15,10 +15,19 @@ comentario opcional de aprobación, motivo obligatorio de rechazo y consulta por
 autor/responsable. Decisión, fechas y evento atómicos; confirmación explícita y
 recuperación ante conflicto o red incierta. Se conserva el funcionamiento previo.
 
-Verificación local: 144 pruebas (14 API, 50 frontend, 80 integración), instalación,
-tipos, build, HTTP y Chrome en desarrollo/compilado. Cambios sin staging, pendientes
-de publicación manual por Alex y CI del nuevo commit. V1 no se declara cerrada
-ni se inicia su fase de cierre. Evidencias A01–A13 y manifiesto al final.
+La fase 07 se publicó en 873374440af302da8a398145e37fb42aa547fb00.
+Su [CI 43213467827 falló](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43213467827)
+en una preparación temporal de integración, según el diagnóstico verificado
+aportado por Alex: 14 API y 50 frontend correctas; integración 79 correctas y
+una fallida; build omitido. Instalación, tipos y migraciones correctos.
+Las 17 pruebas de decisions.test.ts pasaron. No hay CI correcta de ese commit.
+
+Los resultados locales anteriores (144 pruebas, tipos, build, HTTP y Chrome)
+se conservan como históricos y no eliminan el fallo intermitente remoto.
+Se corrige únicamente la preparación de la prueba concurrente y se añade una
+comparación SQL exacta de fechas. Resultados nuevos al final de este documento.
+El arreglo necesita publicación manual y comprobación de su propia CI.
+V1 no se declara cerrada ni se inicia su fase de verificación final.
 
 Los apartados de fases anteriores se conservan como históricos; sus referencias
 a funcionalidad o publicación pendientes describen el estado de aquella entrega.
@@ -1190,3 +1199,113 @@ recuperación ante conflictos o red incierta. Conserva sesiones, borradores,
 envío, cancelación, filtros, dependencias y migraciones.
 Verificado con 144 pruebas, tipos, build, HTTP y Chrome en desarrollo y compilado.
 Actualiza contrato, documentación y evidencias A01–A13, sin declarar cerrada V1.
+
+## Corrección de CI — fecha única en preparación concurrente
+
+### Evidencia remota y causa
+
+Ejecución [43213467827](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43213467827)
+del commit 873374440af302da8a398145e37fb42aa547fb00, según la evidencia
+verificada aportada por Alex: instalación, tipos y migraciones correctos,
+14 API + 50 frontend correctas; integración 79 correctas y una fallida.
+Las 17 de decisions.test.ts pasaron; build omitido por el fallo de integración.
+
+La prueba «estado concurrente confirmado antes del bloqueo impide una edición
+desfasada», en solicitudes.test.ts, preparaba cancelada usando dos evaluaciones
+independientes de clock_timestamp(). En el runner quedaron:
+
+- actualizada_en: 2026-11-12 11:57:49.175024+00.
+- finalizada_en: 2026-11-12 11:57:49.175025+00.
+
+La diferencia de un microsegundo infringió finalizada_en <= actualizada_en:
+SQLSTATE 23514, solicitudes_check2. Ocurrió en el UPDATE de preparación, antes
+de lanzar el PATCH, no en la resolución de negocio. Las comprobaciones locales
+históricas no garantizaban que ambas llamadas produjeran siempre la misma fecha.
+
+### Corrección y búsqueda de casos equivalentes
+
+La preparación usa WITH momento AS MATERIALIZED con una única evaluación de
+clock_timestamp(), reutilizada en finalizada_en y actualizada_en. Se mantienen
+BEGIN/COMMIT/ROLLBACK, la conexión que bloquea la fila, el PATCH concurrente,
+la comprobación de espera real con pg_blocking_pids, el 409 y el título original.
+
+Tras confirmar la transacción y recibir el PATCH se comprueba en PostgreSQL
+finalizada_en=actualizada_en, exigiendo una fila con true. La igualdad usa toda
+la precisión almacenada; no depende de conversiones a Date o JSON.
+No se añaden esperas, tolerancias, reintentos ni omisiones para ocultar errores.
+
+Búsqueda de relojes y campos temporales en pruebas/fixtures de API y frontend,
+además de scripts: no hay otro caso con varias evaluaciones de clock_timestamp
+para estas fechas. persistence.test.ts usa now() repetido en un INSERT, junto
+con los valores predeterminados de la misma transacción; now() mantiene el
+instante de inicio de transacción y no presenta este riesgo. Los otros UPDATE
+de ese archivo son casos que deliberadamente esperan 23514. workflow.test.ts
+usa una sola llamada a now() o copia fechas existentes; no requiere cambios.
+Los mocks web no preparan filas PostgreSQL ni reproducen esta restricción.
+Se modifica únicamente solicitudes.test.ts, además de este registro.
+
+No se cambian código de negocio, restricciones SQL, migraciones, dependencias,
+lockfile o configuración de CI. No se amplía el alcance ni se inicia cierre V1.
+
+### Verificación nueva y publicación
+
+Inspección inicial: raíz exclusiva del Proyecto 02, main limpio,
+HEAD 873374440af302da8a398145e37fb42aa547fb00 y origin
+https://github.com/AlexC-0/gestion-solicitudes-aprobaciones.git.
+Se conserva el estado del repositorio y se dejan los cambios sin staging.
+
+Todos los comandos npm de esta corrección se ejecutaron con
+npx --yes --package=npm@11.19.1 npm. Resultados nuevos:
+
+| Comando tras el prefijo | Resultado |
+| --- | --- |
+| ci | Correcto: 294 paquetes; package-lock.json conservado sin diff |
+| run db:local -- status / start | Instancia existente inicialmente detenida, arrancada en 127.0.0.1:55433 |
+| run test:integration -- apps/api/tests/integration/solicitudes.test.ts -t 'estado concurrente confirmado antes del bloqueo impide una edición desfasada' | Cinco ejecuciones acotadas: 5/5 correctas |
+| run typecheck | API y frontend correctos |
+| test | 14 API y 50 frontend correctas |
+| run test:integration | 80 correctas, ninguna omitida; incluye las 17 de decisions.test.ts |
+| run build | API y frontend correctos; Vite 144 módulos |
+| run db:local -- stop / status | Detenida al terminar, datos conservados |
+
+En cada ejecución filtrada se ejecutó una prueba y las otras once del archivo
+quedaron fuera por el filtro -t. No se modificó ninguna prueba para omitirla;
+la ejecución completa posterior pasó las 80. Las repeticiones no se cuentan
+como pruebas distintas: total final 144 (14 + 50 + 80), sin casos nuevos.
+
+La instalación conserva los tres avisos moderados y los avisos allowScripts
+de argon2/esbuild ya conocidos; no se hicieron cambios de dependencias.
+No se repitieron recorridos visuales ni se arrancó HTTP: el diff se limita a
+pruebas y documentación, conforme al encargo.
+
+Se conservan las comprobaciones current_database antes de crear y eliminar
+esquemas propios nuevos de gestion_solicitudes_aprobaciones_test. Auditoría antes
+y después: desarrollo con 4 usuarios, 3 tipos, 12 solicitudes y 32 eventos;
+app de pruebas vacío y cero esquemas p02_test_ residuales. No se ejecutaron
+prepare, reset, initdb ni regeneración de credenciales.
+
+Revisión final: diff correcto, 27 enlaces locales válidos y cero coincidencias
+con secretos privados en los 70 archivos versionables y assets. PostgreSQL
+propio detenido; datos conservados. No quedan procesos temporales iniciados
+por esta corrección.
+
+Archivos modificados, ambos sin staging:
+
+- apps/api/tests/integration/solicitudes.test.ts.
+- docs/STATUS.md.
+
+Rama main, HEAD 873374440af302da8a398145e37fb42aa547fb00 y origin conservados.
+Staging, commit y push quedan exclusivamente a cargo de Alex en GitHub Desktop.
+La CI del arreglo sigue pendiente de publicación y comprobación; estos resultados
+son locales. La verificación final de V1 solo comenzará después de comprobar
+la nueva CI y recibir el encargo correspondiente.
+
+Summary: test: usar una fecha única en la preparación de concurrencia
+
+Description:
+Corrige la preparación del estado cancelado con una única fecha SQL reutilizada
+en finalizada_en y actualizada_en. Añade igualdad exacta en PostgreSQL y conserva
+la espera real del bloqueo, la respuesta 409 y el título original.
+Revisa preparaciones equivalentes sin encontrar otros casos con el mismo riesgo.
+Verificado con cinco ejecuciones de la prueba afectada, instalación reproducible,
+tipos, 144 pruebas y build. Documenta la CI fallida y deja pendiente la del arreglo.

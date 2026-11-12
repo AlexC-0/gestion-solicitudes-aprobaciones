@@ -179,7 +179,10 @@ it('estado concurrente confirmado antes del bloqueo impide una edición desfasad
     const lock=await f.pool.connect();
     try{
       await lock.query('BEGIN');
-      await lock.query("UPDATE solicitudes SET estado='cancelada',finalizada_en=clock_timestamp(),actualizada_en=clock_timestamp() WHERE id=$1",[id]);
+      await lock.query(
+        `WITH momento AS MATERIALIZED (SELECT clock_timestamp() AS fecha)
+         UPDATE solicitudes s SET estado='cancelada',finalizada_en=m.fecha,actualizada_en=m.fecha
+         FROM momento m WHERE s.id=$1`,[id]);
       const pending=f.write(a,'solicitudes/'+id,'patch').send({titulo:'No debe persistir'}).expect(409).then(r=>r);
       const pid=(await lock.query('SELECT pg_backend_pid() pid')).rows[0].pid as number;
       const deadline=Date.now()+5000;
@@ -192,6 +195,10 @@ it('estado concurrente confirmado antes del bloqueo impide una edición desfasad
       expect(blocked).toBe(true);
       await lock.query('COMMIT');await pending;
       expect((await f.get(a,'solicitudes/'+id)).body.solicitud.titulo).toBe(draft.titulo);
+      // Comparación en PostgreSQL: Date/JSON perdería precisión de microsegundos.
+      expect((await f.pool.query(
+        'SELECT finalizada_en=actualizada_en AS fechas_iguales FROM solicitudes WHERE id=$1',[id]
+      )).rows).toEqual([{fechas_iguales:true}]);
     }finally{await lock.query('ROLLBACK');lock.release();}
   });
 });
