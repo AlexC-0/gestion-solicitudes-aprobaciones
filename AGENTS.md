@@ -13,21 +13,24 @@
 - Redacta principalmente en castellano. No existe sincronización automática con
   conversaciones del navegador.
 
-## Alcance vigente: fase 07, aprobación y rechazo
+## Alcance vigente: fase 08, candidata V1 y E2E
 
-El nuevo encargo autoriza aprobar/rechazar pendientes por el revisor asignado,
-comentarios/motivos, consulta del resultado, formularios y pruebas concurrentes.
-Lee SOLICITUDES y AUTENTICACION antes de modificar. Fase 06 publicada en
-f1a10a764d72c6622ccc910b247152ad36b2ec66, CI 43210342557 SUCCESS y 115 pruebas,
-según Alex. Esa evidencia no acredita esta entrega; su CI requiere publicación manual.
-Conserva todo el funcionamiento anterior, datos, credenciales y migraciones.
-Usa únicamente status/start/stop de la instancia existente; no prepare/reset/initdb.
-Transiciones/eventos atómicos con comprobación de responsable/rol/estado dentro
-del bloqueo, fechas posteriores al bloqueo y lectura de una instantánea.
-Verifica esperas concurrentes reales y ambos órdenes frente a cancelación.
-Relaciona las evidencias con A01–A13 sin declarar cerrada V1 ni iniciar su cierre.
-No añadas administración, reasignación, servicios ni despliegue; tampoco cambios
-de CV, LinkedIn o portfolio.
+Encargo explícito: verificación final A01–A13, E2E reproducibles con Playwright
+Test/Chromium, correcciones de defectos demostrados y documentación de aceptación.
+Punto de partida 78404615d5ecb87c14ec20e43caf4c033e08970b, CI 43215189948 SUCCESS
+con 144 pruebas, según Alex. La fecha única está corregida y su fallo previo
+es histórico. Esa CI no acredita los cambios nuevos.
+Se autoriza la dependencia local Playwright y descargar su Chromium; no herramientas
+globales ni perfiles personales. E2E con compilado, API real y PostgreSQL _test,
+esquema exclusivo, current_database antes de preparar/limpiar, cuentas y secreto
+efímeros. Configura esquema de negocio y sesiones, cierra navegador/contextos,
+HTTP/store/temporizadores/pool antes de eliminar solo el esquema propio.
+Un worker, cero reintentos; sin omisiones que oculten fallos. No publiques cookies,
+tokens, contraseñas, estados autenticados o trazas de login.
+Conserva producto, datos, credenciales y migraciones; instancia existente solo
+status/start/stop, sin prepare/reset/initdb. No amplíes funcionalidades.
+Aceptación remota final pendiente de publicación manual y CI del nuevo commit.
+Sin tags, releases, despliegue ni cambios de CV, LinkedIn o portfolio.
 
 Se autoriza crear código/configuración, instalar dependencias locales, ejecutar
 pruebas y compilaciones, arrancar temporalmente procesos locales y preparar CI.
@@ -128,4 +131,4 @@ No es necesario pedir otra autorización para estas tareas ordinarias.
   sin NUL/surrogates aislados ni HTML; conserva el contrato SOLICITUDES.
 - Sin reintentos automáticos de escritura. Un fallo de red tras POST puede dejar
   un borrador guardado: ofrece comprobar el listado antes de repetir.
-- No avances al cierre de V1 sin un nuevo encargo.
+- La fase 08 autoriza verificación final local; no declares aceptación remota sin CI del nuevo commit.

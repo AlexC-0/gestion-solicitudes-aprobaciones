@@ -2,8 +2,8 @@
 
 Las reglas funcionales del [PROJECT_BRIEF](PROJECT_BRIEF.md) se conservan.
 La sesión inicial fue documental; su actualización está publicada en `5ef10e5`.
-La persistencia quedó cerrada en ff60200 con CI 43199015562 SUCCESS. El encargo
-vigente autoriza autenticación; sus cambios nuevos siguen locales.
+La persistencia quedó cerrada en ff60200 con CI 43199015562 SUCCESS. Los apartados
+por fase conservan su contexto histórico; el estado vigente se recoge en STATUS.
 
 ## Definido
 
@@ -341,3 +341,35 @@ y AGENTS conserva las reglas permanentes. La CI anterior no acredita esta entreg
 
 Sin dependencias nuevas, administración, reasignación ni despliegue. Las evidencias
 locales y A01–A13 se relacionan en STATUS; V1 no se declara cerrada.
+
+## Fase 08 — candidata V1 y navegador reproducible
+
+Base 78404615d5ecb87c14ec20e43caf4c033e08970b con CI 43215189948 SUCCESS,
+144 pruebas, según Alex. El fallo anterior de fecha es histórico. El encargo
+habilita aceptación local y E2E, sin ampliar producto ni cambiar migraciones.
+
+- Playwright Test 1.65.0 fijado tras comprobar engines >=20 y compatibilidad con
+  Node 24. Solo Chromium; un worker, cero retries, forbidOnly y tiempo global acotado.
+- Fixtures importan factorías compiladas de API y sirven web compilada. Reutilizan
+  withTestSchema y sus controles current_database; un esquema nuevo por caso,
+  migraciones repetidas y credenciales/secreto efímeros. Sin endpoints alternativos.
+- Un HTTP propio por caso en loopback con puerto asignado por el SO; origen real
+  explícito. Negocio y sesiones comparten el esquema exclusivo. Contextos separados
+  para sesiones simultáneas y cierre ordenado antes de eliminar el esquema.
+- Recorridos UI representativos; la matriz exhaustiva de permisos/Unicode y las
+  carreras precisas permanecen en integración. Espera de identidad visible tras
+  login (el encabezado Tu cuenta también existe durante la comprobación de sesión).
+- Reporter restringido, sin logs de argumentos/cuerpos; sanea error-context.md que
+  Playwright puede generar automáticamente. Sin storageState, trazas de login,
+  vídeos o capturas automáticas de fallos; capturas explícitas solo tras login.
+- CI añade instalación de Chromium/dependencias y E2E después del build. Conserva
+  npm 11.19.1, permisos y timeout de diez minutos; no hay evidencia para ampliarlo.
+- README consolidado por ciclo de vida; PRUEBAS documenta la reproducción y
+  ACEPTACION-V1 relaciona A01–A13. Los históricos permanecen en STATUS.
+- Audit revisado una vez: tres moderados transitivos de node-pg-migrate/glob/
+  minimatch. Glob ~13.0.0 impide aplicar el major corregido sin forzar rangos;
+  npm propone downgrade mayor de node-pg-migrate. Se documentan y no se aplican
+  force, overrides incompatibles o actualizaciones masivas.
+
+La aceptación remota final requiere publicación manual y CI del nuevo commit.
+Sin tags, releases, despliegue o cambios de CV/portfolio.

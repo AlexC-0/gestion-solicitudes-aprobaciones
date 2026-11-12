@@ -2,35 +2,33 @@
 
 Fecha de comprobación: 12 de noviembre de 2026 (Europe/Madrid).
 
-## Estado actual — corrección de CI de fase 07
+## Estado actual — candidata V1, fase 08
 
-La fase 06 quedó publicada en f1a10a764d72c6622ccc910b247152ad36b2ec66,
-con [CI 43210342557 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43210342557),
+Candidata V1 verificada localmente; pendiente de publicación manual y CI final.
+
+Punto de partida publicado: 78404615d5ecb87c14ec20e43caf4c033e08970b,
+[CI 43215189948 SUCCESS](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43215189948),
 según evidencia verificada aportada por Alex: instalación, tipos, migraciones,
-build y 115 pruebas (14 API, 38 frontend, 63 integración). Se registra su cierre.
-Ese resultado acredita exclusivamente aquel commit, no los cambios de fase 07.
+build y 144 pruebas (14 API, 50 frontend, 80 integración).
+La corrección de fecha única está verificada remotamente. El fallo anterior de
+8733744 / CI 43213467827 queda como histórico, no como bloqueo actual.
 
-Fase 07 implementada localmente: resolución de pendientes por el revisor asignado,
-comentario opcional de aprobación, motivo obligatorio de rechazo y consulta por
-autor/responsable. Decisión, fechas y evento atómicos; confirmación explícita y
-recuperación ante conflicto o red incierta. Se conserva el funcionamiento previo.
+Fase 08 añade cinco E2E versionadas con Playwright Test/Chromium, compilado,
+API real y PostgreSQL real; aislamiento por esquema, credenciales efímeras y
+contextos separados. CI preparada para ejecutarlas después del build.
+No se amplían funcionalidades ni se cambian producto o migraciones.
 
-La fase 07 se publicó en 873374440af302da8a398145e37fb42aa547fb00.
-Su [CI 43213467827 falló](https://github.com/AlexC-0/gestion-solicitudes-aprobaciones/actions/runs/43213467827)
-en una preparación temporal de integración, según el diagnóstico verificado
-aportado por Alex: 14 API y 50 frontend correctas; integración 79 correctas y
-una fallida; build omitido. Instalación, tipos y migraciones correctos.
-Las 17 pruebas de decisions.test.ts pasaron. No hay CI correcta de ese commit.
+Verificación local nueva: instalación reproducible, tipos, build y 149 casos
+distintos (14 API + 50 frontend + 80 integración + 5 E2E), sin retries en E2E.
+Proxy de desarrollo y HTML/API/assets compilados comprobados. Revisión de teclado,
+foco, etiquetas, mensajes y viewports de escritorio/móvil. Matriz A01–A13 en
+[ACEPTACION-V1](ACEPTACION-V1.md); reproducción en [PRUEBAS](PRUEBAS.md) y README.
+Estos resultados locales no acreditan la CI del workflow modificado.
 
-Los resultados locales anteriores (144 pruebas, tipos, build, HTTP y Chrome)
-se conservan como históricos y no eliminan el fallo intermitente remoto.
-Se corrige únicamente la preparación de la prueba concurrente y se añade una
-comparación SQL exacta de fechas. Resultados nuevos al final de este documento.
-El arreglo necesita publicación manual y comprobación de su propia CI.
-V1 no se declara cerrada ni se inicia su fase de verificación final.
-
-Los apartados de fases anteriores se conservan como históricos; sus referencias
-a funcionalidad o publicación pendientes describen el estado de aquella entrega.
+Las referencias de fases anteriores a funcionalidades, publicación o cierre
+pendientes describen su estado histórico. No se han creado tags, releases o
+despliegues. La aceptación remota final requiere el nuevo commit publicado por
+Alex y comprobar su CI.
 
 ## Preparación documental inicial — histórico
 
@@ -1309,3 +1307,177 @@ la espera real del bloqueo, la respuesta 409 y el título original.
 Revisa preparaciones equivalentes sin encontrar otros casos con el mismo riesgo.
 Verificado con cinco ejecuciones de la prueba afectada, instalación reproducible,
 tipos, 144 pruebas y build. Documenta la CI fallida y deja pendiente la del arreglo.
+
+## Fase 08 — verificación final local y E2E reproducibles
+
+### Inspección y alcance
+
+Raíz exclusiva gestion-solicitudes-aprobaciones, main inicialmente limpio,
+HEAD 78404615d5ecb87c14ec20e43caf4c033e08970b y origin correcto.
+No se inspeccionó ni modificó el Proyecto 01. Leídos los contratos e instrucciones,
+incluida la relación histórica A01–A13. AGENTS actualiza la autorización temporal
+a fase 08 y conserva las reglas de Git manual y protección de datos.
+
+Revisión de rutas/permisos, transiciones, validaciones, campos controlados,
+asignación, atomicidad, sesiones, CSRF, caché, filtros, errores e historial.
+No se identificaron defectos de producto que exigieran cambiar su código.
+No se alteran PROJECT_BRIEF, migraciones publicadas, restricciones SQL ni negocio.
+Aceptación concreta por criterio, evidencia y límites en ACEPTACION-V1.
+
+### Suite versionada y decisiones
+
+Playwright Test 1.65.0, engines >=20 verificado en el registro npm, compatible
+con Node 24.13.0 local y Node 24.22.2 fijado en CI. Añade únicamente tres paquetes:
+@playwright/test, playwright y playwright-core, todos fijados por lockfile.
+Skill aplicada: ecc:e2e-testing; se priorizan las reglas del encargo sobre los
+ejemplos de retries, cuarentena y artefactos de la skill.
+Consultadas las guías oficiales de CI y autenticación enlazadas en PRUEBAS.
+
+Un worker, retries=0, forbidOnly, 60 s por caso, 240 s global.
+Las factorías se importan de apps/api/dist y sirven apps/web/dist. Se reutiliza
+withTestSchema para exigir la base exacta antes de crear/eliminar esquemas nuevos.
+Migrate sobre vacío y segunda ejecución sin cambios en cada caso. Pool de negocio
+y store de sesiones usan explícitamente el mismo esquema exclusivo.
+
+HTTP propio por caso en loopback y puerto efímero asignado por el SO, sin aceptar
+servidores ya abiertos. Credenciales/secreto efímeros; no se usan usuarios de app
+ni el archivo privado de desarrollo. Acciones principales por interfaz, sin
+endpoints alternativos ni mocks. Navegador/contextos cierran antes de HTTP,
+store/temporizadores, pool y esquema, incluso ante fallos.
+
+Cinco casos:
+1. Crear/editar/enviar/aprobar por teclado, consulta del autor y filtro.
+2. Rechazar en móvil, motivo validado e historial desde autor y revisor.
+3. Cancelación antes/después del envío, visibilidad distinta y acceso ajeno denegado.
+4. Cancelación del autor en otro contexto mientras se prepara rechazo: 409 y recuperación.
+5. Logout, atrás y cambio de cuenta sin recuperar datos privados anteriores.
+
+El reporter solo imprime caso/estado y ubicaciones, sin argumentos privados.
+Sanea el error-context.md automático; sin storageState, trazas de login o vídeos.
+Capturas explícitas después del login en test-results/e2e, ignoradas y no subidas
+a CI. La configuración no publica artefactos de autenticación.
+
+### Verificación nueva
+
+Todos los comandos npm usaron npx --yes --package=npm@11.19.1 npm:
+
+| Comando tras el prefijo | Resultado real |
+| --- | --- |
+| view @playwright/test version engines peerDependencies --json | 1.65.0, engines >=20, sin conflictos de peers declarados |
+| audit --json | Tres avisos moderados conocidos; alcance detallado abajo |
+| install --save-dev --save-exact @playwright/test@1.65.0 | Dependencia y lockfile actualizados de forma acotada |
+| exec -- playwright install chromium | Chromium 158.0.8127.18, revisión 1254, descargado en caché Playwright |
+| ci | Instalación limpia correcta: 297 paquetes; conserva el lockfile actualizado |
+| run db:local -- status / start | Instancia existente inicialmente detenida; arranque en 127.0.0.1:55433 |
+| run typecheck | API/web y nuevos archivos E2E correctos |
+| test | 14 API + 50 frontend correctas |
+| run test:integration | 80 correctas, ninguna omitida; 149,70 s |
+| run build | API y web correctos; 144 módulos Vite |
+| run test:e2e | Cinco correctas, cero retries y sin omisiones |
+| run dev | Proxy real comprobado en 5173 |
+| start | Arranque compilado real y comprobaciones HTTP en 3000 |
+
+Total: 149 casos distintos. No se cuentan repeticiones de diagnóstico ni controles
+de fallo provocado como nuevos casos de aceptación. Las suites existentes no se
+han modificado ni debilitado.
+
+La primera ejecución de E2E pasó aprobación y logout, pero detuvo tres casos al
+navegar inmediatamente después de ver el encabezado Tu cuenta. Se comprobó que
+ese encabezado existe durante el estado de comprobación de sesión; el fixture
+todavía no había esperado la identidad. Se corrigió esperando el correo visible
+de la cuenta autenticada y la URL de detalle. Los cinco casos completos pasaron
+después, también en la ejecución posterior a tipos/pruebas/integración/build.
+No se añadieron pausas fijas, retries ni timeouts mayores.
+
+La descarga de Chromium tuvo avisos de cadena de certificado en algunos mirrors;
+el instalador completó la descarga por sus alternativas. No se desactivó TLS ni
+se cambió Chrome o perfiles personales.
+
+Revisión de capturas: detalle aprobado de escritorio y formulario/expediente
+rechazado móvil. Viewports 1280x900 y 390x844 sin overflow, foco visible, etiquetas,
+aviso definitivo, mensaje de validación y saltos de línea legibles. Escape devuelve
+foco; Tab/Enter confirma. Se reutilizan pruebas web de cancelación y formularios.
+No constituye auditoría exhaustiva, multibrowser, dispositivo físico o TLS desplegado.
+
+.local/phase08-http-check.mjs comprobó HTML de acceso, API/health, auth/me 401 y
+API desconocida 404 con JSON a través de Vite; en compilado verificó además assets
+200 y asset inexistente 404. No creó solicitudes ni usó credenciales.
+
+### Instalación, CI y dependencias
+
+README consolidado: nuevo entorno (ci → prepare crea .env/bases → auth:configure
+→ check/migrate → seed crea credenciales), entorno preparado, compilado, pruebas,
+puertos junto con sus orígenes y detención conservando datos.
+La preparación completa desde cero queda documentada, pero NO se ejecutó prepare,
+reset, initdb o regeneración de credenciales en esta fase. Sí se verificó instalación
+limpia de dependencias y migración repetida sobre esquemas vacíos de prueba.
+
+Audit conserva tres moderados: node-pg-migrate/glob/minimatch. Glob ~13.0.0 no admite
+el major corregido sin forzar rangos; npm propone downgrade mayor a node-pg-migrate
+7.6.1. Se mantienen explícitos, sin force, overrides incompatibles ni cambios masivos.
+Su uso es tooling con rutas de migración locales controladas, no patrones HTTP
+aportados por usuarios; no se declara riesgo nulo. Avisos allowScripts de argon2/
+esbuild presentes; instalación, Argon2 real y build correctos.
+
+Workflow conserva instalación, tipos, pruebas, migraciones repetidas, integración
+y build; añade instalación de Chromium con --with-deps y E2E después del build.
+Npm 11.19.1, permisos mínimos, PostgreSQL efímero y timeout de diez minutos
+conservados. No hay medición que justifique ampliar ese límite.
+Workflow preparado y ejecución local correcta; CI remota de fase 08 pendiente.
+
+### Entrega local
+
+Archivos modificados:
+- .github/workflows/ci.yml.
+- AGENTS.md y README.md.
+- package.json y package-lock.json.
+- docs/DECISIONES.md y docs/STATUS.md.
+
+Archivos nuevos:
+- playwright.config.ts.
+- tests/e2e/fixtures.ts, workflows.spec.ts, reporter.ts y tsconfig.json.
+- docs/PRUEBAS.md y docs/ACEPTACION-V1.md.
+
+Rama main/HEAD 78404615d5ecb87c14ec20e43caf4c033e08970b y origin conservados.
+Los 14 archivos quedan sin staging. Alex realiza staging, commit y push desde
+GitHub Desktop. Candidata V1 verificada localmente; pendiente de publicación
+manual y CI final. No tags, releases, despliegue, CV, LinkedIn o portfolio.
+
+Summary: test: verificar la candidata V1 con E2E reproducibles
+
+Description:
+Añade cinco recorridos Playwright con Chromium, aplicación compilada y PostgreSQL
+real, esquemas exclusivos, credenciales efímeras y limpieza de recursos.
+Integra E2E después del build en CI y conserva permisos, controles y npm 11.19.1.
+Consolida la guía de instalación/arranque/pruebas y documenta aceptación A01–A13.
+Verificado localmente con 149 pruebas, tipos, build, proxy y HTTP compilado.
+La aceptación remota final queda pendiente de publicación manual y nueva CI.
+
+### Controles negativos, aislamiento y revisión final
+
+Tres comprobaciones locales de la infraestructura E2E, no sumadas a los 149 casos:
+
+- Caso temporal en .local que accede y provoca un fallo: código 1 esperado,
+  navegador/HTTP/store/pool/esquema cerrados. Se inyectó un marcador ficticio
+  en el error y se comprobó que el error-context.md saneado no lo conserva.
+- TEST_DATABASE_URL temporal apuntando a un puerto sin PostgreSQL: código 1
+  y mensaje claro de base requerida, sin esquemas preparados.
+- PLAYWRIGHT_BROWSERS_PATH temporal sin Chromium: código 1 y mensaje de instalación
+  requerida; el esquema preparado se elimina igualmente.
+
+Las variables se restauraron al terminar. No se modificó .env ni se usaron
+credenciales de desarrollo para las E2E. Se verificó también el mensaje seguro
+de base ausente después de ajustar el reporter para el prefijo Error: de Playwright.
+Typecheck final correcto. Los tres informes negativos conservan solo caso/estado,
+sin detalles privados; son controles esperados de fallo, no fallos de aceptación.
+
+Auditoría: desarrollo conserva 4 usuarios, 3 tipos, 12 solicitudes y 32 eventos;
+app de pruebas vacío y cero esquemas p02_test_ residuales. 77 archivos versionables,
+34 enlaces locales válidos y cero coincidencias con credenciales privadas o
+SESSION_SECRET en archivos/compilados. Diff revisado y sin errores.
+
+HTTP/Vite propios cerrados ordenadamente y PostgreSQL detenido con datos
+conservados; cero listeners en 3000/5173/55433 y cero Chromium headless propios
+activos. Los wrappers npm de Windows devuelven código 1 al recibir Ctrl+C,
+con mensaje de cierre correcto de HTTP/sesiones/pool. No hay procesos temporales
+pendientes de esta fase.

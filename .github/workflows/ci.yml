@@ -68,3 +68,7 @@ jobs:
       - run: npx --yes --package="npm@$NPM_VERSION" npm run db:migrate:test
       - run: npx --yes --package="npm@$NPM_VERSION" npm run test:integration
       - run: npx --yes --package="npm@$NPM_VERSION" npm run build
+      - name: Instalar Chromium y dependencias del runner
+        run: npx --yes --package="npm@$NPM_VERSION" npm run e2e:install -- --with-deps
+      - name: Recorridos E2E con compilado y PostgreSQL real
+        run: npx --yes --package="npm@$NPM_VERSION" npm run test:e2e
